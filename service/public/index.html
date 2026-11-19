@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Will this booking be cancelled?</title>
+<meta name="description" content="Course project demo: a machine-learning model that estimates the chance a hotel booking is cancelled, using only what is known on the day it is made.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%231f3f8f'/%3E%3Cpath d='M8 2l6 6-6 6-6-6z' fill='%23dce5f5'/%3E%3Ccircle cx='8' cy='8' r='2' fill='%231f3f8f'/%3E%3C/svg%3E">
+<!-- Fonts are optional: loaded without blocking the page, with system fonts as the fallback. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --cobalt: #1f3f8f;
+    --ink: #102047;
+    --tile: #f9fbfe;
+    --glaze: #dce5f5;
+    --slate: #55617c;
+    --ochre: #8f6614;
+    --brick: #9e2f25;
+    --line: #c9d5ec;
+    --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--tile); color: var(--ink); font: 16px/1.5 var(--sans); }
+  a { color: var(--cobalt); }
+  .page { max-width: 1120px; margin: 0 auto; padding: 36px 24px 64px; }
+  .eyebrow { margin: 0 0 10px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+             color: var(--ochre); }
+  header h1 { font: 400 clamp(2.3rem, 5vw, 3.6rem)/1.05 var(--serif); margin: 0 0 12px; color: var(--cobalt); }
+  header p.lede { max-width: 70ch; margin: 0; color: var(--slate); }
+  .links { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 14px 0 0; padding: 0; list-style: none; font-size: 0.92rem; }
+
+  .presets { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .presets p { margin: 0 0 10px; font-size: 0.92rem; color: var(--slate); }
+  .preset-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .preset { font: 500 0.95rem var(--sans); text-align: left; background: #fff; color: var(--cobalt);
+            border: 1px solid var(--cobalt); border-radius: 6px; padding: 9px 14px; cursor: pointer; }
+  .preset:hover { background: var(--glaze); }
+  .preset[aria-pressed="true"] { background: var(--cobalt); color: #fff; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 40px; margin-top: 28px; align-items: start; }
+  form { display: grid; gap: 22px; }
+  fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: 14px 0 0; display: grid; min-width: 0;
+             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px 16px; }
+  legend { font: 400 1.35rem/1 var(--serif); color: var(--cobalt); padding-right: 10px; }
+  label { display: grid; gap: 4px; font-size: 0.85rem; color: var(--slate); align-content: start; }
+  input, select { font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--line);
+                  border-radius: 6px; padding: 8px 10px; min-width: 0; width: 100%; }
+  input[type="checkbox"] { width: auto; }
+  input[aria-invalid="true"] { border-color: var(--brick); background: #fdf3f2; }
+  input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible {
+    outline: 3px solid var(--cobalt); outline-offset: 2px; }
+  .check { grid-template-columns: auto 1fr; align-items: center; align-self: end; padding-bottom: 8px; }
+  .derived { grid-column: 1 / -1; font-size: 0.85rem; color: var(--slate); margin: 0; }
+  .submit { font: 600 1rem var(--sans); background: var(--cobalt); color: #fff; border: 0; border-radius: 6px;
+            padding: 13px 22px; cursor: pointer; justify-self: start; }
+  .submit:hover { background: var(--ink); }
+  button[disabled] { opacity: 0.6; cursor: progress; }
+
+  /* The result tile: the one decorative element, framed like an azulejo panel. */
+  .tile { position: sticky; top: 24px; padding: 14px; border-radius: 4px;
+          background:
+            radial-gradient(circle at 50% 50%, var(--tile) 0 22%, transparent 23%) 0 0 / 28px 28px,
+            repeating-conic-gradient(from 45deg, var(--cobalt) 0 25%, var(--glaze) 0 50%) 0 0 / 28px 28px; }
+  .tile-inner { background: #fff; border-radius: 2px; padding: 26px 26px 22px; min-height: 360px; }
+  .figure { font: 400 clamp(4.2rem, 10vw, 6.5rem)/0.9 var(--serif); color: var(--cobalt); margin: 6px 0 6px; }
+  .figure small { font-size: 0.4em; }
+  .verdict { font-size: 1.15rem; font-weight: 600; margin: 0 0 14px; }
+  .plain { margin: 0; font-size: 1.02rem; }
+  .scale { position: relative; height: 12px; border-radius: 6px; margin: 24px 0 8px;
+           background: linear-gradient(90deg, var(--glaze), #b8862b 60%, var(--brick)); }
+  .marker { position: absolute; top: -7px; width: 4px; height: 26px; background: var(--ink); border-radius: 2px;
+            transform: translateX(-50%); transition: left 0.5s ease; }
+  .threshold { position: absolute; top: 16px; transform: translateX(-50%); font-size: 0.75rem; color: var(--slate);
+               white-space: nowrap; }
+  .threshold::before { content: ""; position: absolute; left: 50%; top: -20px; height: 16px;
+                       border-left: 2px dashed var(--ink); }
+  .scale-ends { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--slate); margin-top: 24px; }
+  .explain { color: var(--slate); margin: 16px 0 0; font-size: 0.95rem; }
+  .band-low { color: var(--cobalt); } .band-medium { color: var(--ochre); } .band-high { color: var(--brick); }
+  .notice { margin: 14px 0 0; padding: 10px 12px; border-left: 3px solid #b8862b; background: #fbf6ec;
+            font-size: 0.9rem; }
+  .notice ul { margin: 6px 0 0; padding-left: 18px; }
+  .error { border-left-color: var(--brick); background: #f9ecea; }
+  .meta { margin: 16px 0 0; font-size: 0.8rem; color: var(--slate); font-variant-numeric: tabular-nums;
+          overflow-wrap: anywhere; }
+  .feedback { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .feedback p { margin: 0 0 10px; font-size: 0.9rem; color: var(--slate); }
+  .feedback-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ghost { font: 500 0.92rem var(--sans); background: #fff; color: var(--cobalt); border: 1px solid var(--cobalt);
+           border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+  .ghost:hover { background: var(--glaze); }
+
+  .about { margin-top: 56px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 32px;
+           border-top: 1px solid var(--line); padding-top: 28px; }
+  .about h2 { font: 400 1.6rem/1.1 var(--serif); color: var(--cobalt); margin: 0 0 10px; }
+  .about h3 { font: 600 0.85rem var(--sans); color: var(--ink); margin: 14px 0 4px; }
+  .about p, .about li { color: var(--slate); font-size: 0.95rem; max-width: 60ch; }
+  .about p { margin: 0 0 10px; }
+  .about ul { padding-left: 18px; margin: 0; }
+  dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0 0 12px; font-size: 0.95rem; }
+  dt { color: var(--slate); } dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  footer { margin-top: 40px; font-size: 0.85rem; color: var(--slate); }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; gap: 28px; }
+    .tile { position: static; }
+  }
+  @media (max-width: 520px) {
+    .page { padding: 24px 16px 48px; }
+    .tile { padding: 10px; }
+    .tile-inner { padding: 20px 18px 18px; min-height: 0; }
+    .preset { flex: 1 1 100%; }
+    .submit { justify-self: stretch; }
+  }
+  @media (prefers-reduced-motion: reduce) { .marker { transition: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <p class="eyebrow">Course project demo, MSc machine learning</p>
+    <h1>Will this booking be cancelled?</h1>
+    <p class="lede">Describe a hotel booking as it looks on the day it is made, and a machine-learning model
+      estimates the chance that it is cancelled before arrival. This is a student project built on public data
+      from two hotels in Portugal, not a live hotel system.</p>
+    <ul class="links" aria-label="More about the service">
+      <li><a href="docs" data-api-link="/docs">API documentation</a></li>
+      <li><a href="api/v1/model" data-api-link="/api/v1/model">Model card (JSON)</a></li>
+      <li><a href="health" data-api-link="/health">Health check</a></li>
+      <li><a href="api/v1/feedback/summary" data-api-link="/api/v1/feedback/summary">Feedback collected so far</a></li>
+    </ul>
+  </header>
+
+  <section class="presets" aria-labelledby="presets-title">
+    <p id="presets-title">Start with an example, then change anything you like:</p>
+    <div class="preset-row">
+      <button type="button" class="preset" data-preset="online">Typical online booking</button>
+      <button type="button" class="preset" data-preset="group">Non-refundable group block, booked far ahead</button>
+      <button type="button" class="preset" data-preset="returning">Last-minute direct booking, returning guest</button>
+    </div>
+  </section>
+
+  <div class="layout">
+    <form id="booking" novalidate>
+      <fieldset>
+        <legend>Stay</legend>
+        <label>Hotel
+          <select name="hotel"><option>City Hotel</option><option>Resort Hotel</option></select></label>
+        <label>Booked on <input type="date" name="booked" required></label>
+        <label>Arrival <input type="date" name="arrival" required></label>
+        <label>Nights <input type="number" name="nights" min="0" max="90" step="1" value="4" inputmode="numeric" required></label>
+        <label>Room type
+          <select name="reserved_room_type">
+            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option>
+            <option>F</option><option>G</option><option>H</option><option>L</option><option>P</option>
+          </select></label>
+        <label>Meal
+          <select name="meal">
+            <option value="BB">Bed and breakfast</option><option value="HB">Half board</option>
+            <option value="FB">Full board</option><option value="SC">No meal package</option>
+          </select></label>
+        <p class="derived" id="derived" aria-live="polite"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Guests</legend>
+        <label>Adults <input type="number" name="adults" min="0" max="60" step="1" value="2" inputmode="numeric" required></label>
+        <label>Children <input type="number" name="children" min="0" max="10" step="1" value="0" inputmode="numeric"></label>
+        <label>Babies <input type="number" name="babies" min="0" max="10" step="1" value="0" inputmode="numeric"></label>
+        <label>Customer type
+          <select name="customer_type">
+            <option>Transient</option><option>Transient-Party</option><option>Contract</option><option>Group</option>
+          </select></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>How it was booked</legend>
+        <label>Market segment
+          <select name="market_segment">
+            <option>Online TA</option><option>Offline TA/TO</option><option>Groups</option><option>Direct</option>
+            <option>Corporate</option><option>Complementary</option><option>Aviation</option>
+          </select></label>
+        <label>Channel
+          <select name="distribution_channel">
+            <option>TA/TO</option><option>Direct</option><option>Corporate</option><option>GDS</option>
+          </select></label>
+        <label>Deposit
+          <select name="deposit_type"><option>No Deposit</option><option>Non Refund</option><option>Refundable</option></select></label>
+        <label>Agent ID (optional) <input type="number" name="agent" min="1" step="1" value="9" inputmode="numeric"></label>
+        <label>Company ID (optional) <input type="number" name="company" min="1" step="1" inputmode="numeric"></label>
+        <p class="derived">TA is a travel agent, TO a tour operator. Agent and company are anonymous ID numbers;
+          try an agent the model has never seen, such as 99999.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Price and history</legend>
+        <label>Price per night <input type="number" name="adr" min="0" max="1000" step="0.01" value="115" inputmode="decimal" required></label>
+        <label>Earlier cancellations <input type="number" name="previous_cancellations" min="0" max="100" step="1" value="0" inputmode="numeric"></label>
+        <label>Earlier stays kept <input type="number" name="previous_bookings_not_canceled" min="0" max="200" step="1" value="0" inputmode="numeric"></label>
+        <label class="check"><input type="checkbox" name="is_repeated_guest"> Returning guest</label>
+      </fieldset>
+
+      <button type="submit" class="submit" id="submit">Estimate cancellation risk</button>
+    </form>
+
+    <section class="tile" aria-labelledby="result-title">
+      <div class="tile-inner" id="result" aria-live="polite">
+        <h2 id="result-title" class="verdict">Fill in the booking to see its risk.</h2>
+        <p class="explain">Pick one of the examples above, or fill in the form and press the button.</p>
+        <noscript><p class="notice error">This page needs JavaScript to talk to the model. The API itself is
+          described at <a href="docs">/docs</a>.</p></noscript>
+      </div>
+    </section>
+  </div>
+
+  <section class="about">
+    <div>
+      <h2>How good is it?</h2>
+      <div id="card"><p>Loading the model's test results...</p></div>
+    </div>
+    <div>
+      <h2>What it deliberately ignores</h2>
+      <p>Some columns in the hotels' records are filled in after the booking, often at check-in. Using them
+        would make the model look far better in testing and fail in practice, so it never sees them.</p>
+      <div id="excluded"></div>
+    </div>
+    <div>
+      <h2>Limits of this demo</h2>
+      <ul>
+        <li>It learned from two hotels in Portugal and may not transfer to other hotels, countries or years.</li>
+        <li>It scores bookings, not people, and should never be the only reason to refuse a guest.</li>
+        <li>In this data non-refundable bookings were cancelled far more often than others, so the model rates
+          them high. That is a pattern of these records, not a rule about deposits.</li>
+        <li>The outcome buttons under each estimate are how a hotel would report what really happened;
+          <a href="api/v1/feedback/summary" data-api-link="/api/v1/feedback/summary">the summary</a> shows how
+          the model is doing on those reports.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span id="source">Data: Antonio, de Almeida and Nunes (2019), <em>Hotel booking demand datasets</em>, Data in Brief, CC BY 4.0.</span>
+    Built for an MSc machine-learning assignment. <a href="docs" data-api-link="/docs">Interactive API documentation</a>.
+  </footer>
+</div>
+
+<script>
+"use strict";
+// ?api=https://other-host lets this page talk to an API on another origin; by default it uses its own.
+const API = (new URLSearchParams(location.search).get("api") || "").replace(/\/+$/, "");
+const form = document.getElementById("booking");
+const result = document.getElementById("result");
+const submitButton = document.getElementById("submit");
+const DAY = 86400000;
+const SLOW_AFTER_MS = 2500;     // when to say the server is waking up
+const GIVE_UP_AFTER_MS = 45000;
+
+const FIELD_LABELS = {
+  hotel: "Hotel", lead_time: "Days booked ahead", arrival_date: "Arrival", stays_in_weekend_nights: "Weekend nights",
+  stays_in_week_nights: "Weekday nights", adults: "Adults", children: "Children", babies: "Babies", meal: "Meal",
+  market_segment: "Market segment", distribution_channel: "Channel", is_repeated_guest: "Returning guest",
+  previous_cancellations: "Earlier cancellations", previous_bookings_not_canceled: "Earlier stays kept",
+  reserved_room_type: "Room type", deposit_type: "Deposit", agent: "Agent ID", company: "Company ID",
+  customer_type: "Customer type", adr: "Price per night", nights: "Nights", body: "The request",
+};
+const NUMBER_FIELDS = ["nights", "adults", "children", "babies", "agent", "company", "adr",
+                       "previous_cancellations", "previous_bookings_not_canceled"];
+const OPTIONAL_FIELDS = new Set(["agent", "company", "children", "babies", "previous_cancellations",
+                                 "previous_bookings_not_canceled"]);
+
+// Three bookings that the model rates very differently. Dates are set relative to today.
+const BASE = { hotel: "City Hotel", reserved_room_type: "A", meal: "BB", adults: 2, children: 0, babies: 0,
+               customer_type: "Transient", market_segment: "Online TA", distribution_channel: "TA/TO",
+               deposit_type: "No Deposit", agent: 9, company: "", adr: 115, previous_cancellations: 0,
+               previous_bookings_not_canceled: 0, is_repeated_guest: false };
+const PRESETS = {
+  online: { lead: 120, nights: 4, values: {} },
+  group: { lead: 300, nights: 3, values: { market_segment: "Groups", deposit_type: "Non Refund", agent: 1, adr: 62 } },
+  returning: { lead: 1, nights: 2, values: { hotel: "Resort Hotel", market_segment: "Direct",
+               distribution_channel: "Direct", agent: "", adults: 1, adr: 60, is_repeated_guest: true,
+               previous_bookings_not_canceled: 3 } },
+};
+
+let card = null;          // /api/v1/model, once loaded
+let maxLeadTime = 1000;   // replaced by the server's own limit when /openapi.json loads
+let requestNumber = 0;    // lets a newer request win over a slower, older one
+
+const esc = (value) => String(value).replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (p) => Math.round(p * 100);
+const pad = (n) => String(n).padStart(2, "0");
+const toIso = (ms) => { const d = new Date(ms); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
+// Dates are handled as UTC midnights so that daylight saving never shifts a day.
+function parseDay(text) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text || "");
+  if (!m) return NaN;
+  const ms = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  return toIso(ms) === text ? ms : NaN;
+}
+function today() { const d = new Date(); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+function leadTime() { return Math.round((parseDay(form.arrival.value) - parseDay(form.booked.value)) / DAY); }
+
+function stayNights() {
+  const arrival = parseDay(form.arrival.value);
+  const nights = Math.max(0, Math.min(400, Math.floor(Number(form.nights.value) || 0)));
+  let weekend = 0;
+  for (let i = 0; i < nights; i++) {
+    const day = new Date(arrival + i * DAY).getUTCDay();
+    if (day === 0 || day === 6) weekend += 1;   // nights falling on Saturday or Sunday, as in the dataset
+  }
+  return { weekend, week: nights - weekend };
+}
+
+function updateDerived() {
+  const lead = leadTime();
+  const s = stayNights();
+  document.getElementById("derived").textContent = Number.isFinite(lead) && lead >= 0
+    ? `Booked ${lead} day${lead === 1 ? "" : "s"} ahead. ${s.weekend} weekend and ${s.week} weekday night${s.week === 1 ? "" : "s"}.`
+    : "";
+}
+
+function applyPreset(name) {
+  const preset = PRESETS[name];
+  const values = { ...BASE, ...preset.values };
+  for (const [key, value] of Object.entries(values)) {
+    if (form[key].type === "checkbox") form[key].checked = Boolean(value); else form[key].value = value;
+  }
+  form.booked.value = toIso(today());
+  form.arrival.value = toIso(today() + preset.lead * DAY);
+  form.nights.value = preset.nights;
+  markPreset(name);
+  updateDerived();
+}
+function markPreset(name) {
+  document.querySelectorAll(".preset").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.preset === name)));
+}
+
+// Stops entries that cannot be right before they are sent. The server checks everything again.
+function clientProblems() {
+  const problems = [];
+  const flag = (name, text) => { form[name].setAttribute("aria-invalid", "true"); problems.push(text); };
+  for (const el of form.elements) el.removeAttribute && el.removeAttribute("aria-invalid");
+
+  const booked = parseDay(form.booked.value), arrival = parseDay(form.arrival.value);
+  if (!Number.isFinite(booked)) flag("booked", "Booked on: choose a real date.");
+  if (!Number.isFinite(arrival)) flag("arrival", "Arrival: choose a real date.");
+  if (Number.isFinite(booked) && Number.isFinite(arrival)) {
+    const lead = leadTime();
+    if (lead < 0) flag("arrival", "Arrival must be on or after the day the booking was made.");
+    else if (lead > maxLeadTime) flag("arrival", `Arrival is ${lead} days after booking; the model accepts at most ${maxLeadTime} days ahead.`);
+  }
+  for (const name of NUMBER_FIELDS) {
+    const el = form[name], label = FIELD_LABELS[name], raw = el.value.trim();
+    if (raw === "") {
+      // A number field that holds text the browser could not read also reports "".
+      if (el.validity && el.validity.badInput) flag(name, `${label}: enter a number.`);
+      else if (!OPTIONAL_FIELDS.has(name)) flag(name, `${label}: enter a number.`);
+      continue;
+    }
+    const value = Number(raw);
+    const min = el.min === "" ? -Infinity : Number(el.min), max = el.max === "" ? Infinity : Number(el.max);
+    if (!Number.isFinite(value)) flag(name, `${label}: enter a number.`);
+    else if (name !== "adr" && !Number.isInteger(value)) flag(name, `${label}: enter a whole number.`);
+    else if (value < min) flag(name, `${label} cannot be less than ${min}.`);
+    else if (value > max) flag(name, `${label} cannot be more than ${max}.`);
+  }
+  const guests = ["adults", "children", "babies"].reduce((sum, n) => sum + (Number(form[n].value) || 0), 0);
+  if (!problems.length && guests < 1) flag("adults", "A booking needs at least one guest.");
+  return problems;
+}
+
+function payload() {
+  const s = stayNights();
+  const num = (name) => Number(form[name].value || 0);
+  const optional = (name) => (form[name].value.trim() ? Number(form[name].value) : null);
+  return {
+    hotel: form.hotel.value, lead_time: leadTime(), arrival_date: form.arrival.value,
+    stays_in_weekend_nights: s.weekend, stays_in_week_nights: s.week,
+    adults: num("adults"), children: num("children"), babies: num("babies"),
+    meal: form.meal.value, market_segment: form.market_segment.value,
+    distribution_channel: form.distribution_channel.value, is_repeated_guest: form.is_repeated_guest.checked,
+    previous_cancellations: num("previous_cancellations"),
+    previous_bookings_not_canceled: num("previous_bookings_not_canceled"),
+    reserved_room_type: form.reserved_room_type.value, deposit_type: form.deposit_type.value,
+    agent: optional("agent"), company: optional("company"), customer_type: form.customer_type.value,
+    adr: num("adr"),
+  };
+}
+
+// One request. Resolves to {ok, status, body, clientMs, serverMs}; throws only when the server cannot be reached.
+async function call(path, options = {}, onSlow = null) {
+  const controller = new AbortController();
+  const slow = setTimeout(() => onSlow && onSlow(), SLOW_AFTER_MS);
+  const giveUp = setTimeout(() => controller.abort(), GIVE_UP_AFTER_MS);
+  const started = performance.now();
+  try {
+    const res = await fetch(API + path, { ...options, signal: controller.signal });
+    let body = null;
+    try { body = await res.json(); } catch { /* not JSON: handled by the caller through `body === null` */ }
+    return { ok: res.ok, status: res.status, body, clientMs: performance.now() - started,
+             serverMs: Number(res.headers.get("X-Process-Time-ms")) || null };
+  } finally {
+    clearTimeout(slow);
+    clearTimeout(giveUp);
+  }
+}
+const postJson = (path, data, onSlow) => call(path, {
+  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }, onSlow);
+
+// The server's error format: {message, errors: [{field, problem}], hint}. Older `detail` lists are understood too.
+function serverProblems(response) {
+  const body = response.body;
+  if (body && Array.isArray(body.errors) && body.errors.length) {
+    return body.errors.map((e) => {
+      const key = String(e.field).split(".").pop();
+      return `${FIELD_LABELS[key] || e.field} ${e.problem}`;
+    });
+  }
+  if (body && Array.isArray(body.detail)) return body.detail.map((d) => `${(d.loc || []).slice(1).join(".") || "booking"}: ${d.msg}`);
+  if (body && typeof body.message === "string") return [body.message];
+  return [`The server answered with status ${response.status} and no explanation.`];
+}
+
+function showProblems(title, problems, retry = false) {
+  result.innerHTML = `
+    <h2 class="verdict" id="result-title">${esc(title)}</h2>
+    <div class="notice error"><ul>${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul></div>
+    ${retry ? `<p class="explain"><button type="button" class="ghost" id="retry">Try again</button></p>` : ""}`;
+  const button = document.getElementById("retry");
+  if (button) button.addEventListener("click", () => form.requestSubmit());
+}
+
+function showWaiting(slow) {
+  result.innerHTML = slow
+    ? `<h2 class="verdict" id="result-title">Waking the server up...</h2>
+       <p class="explain">The service sleeps when nobody is using it, so the first estimate after a pause can
+         take several seconds. Later ones take a fraction of a second.</p>`
+    : `<h2 class="verdict" id="result-title">Estimating...</h2>`;
+}
+
+function thresholdReason() {
+  const costs = card && card.costs;
+  if (!costs || !(costs.false_positive > 0) || !(costs.false_negative > 0)) return "";
+  const ratio = costs.false_positive / costs.false_negative;
+  const text = ratio === 1 ? "as costly as"
+    : ratio > 1 ? `${+ratio.toFixed(1)} times as costly as` : `${+(1 / ratio).toFixed(1)} times cheaper than`;
+  return ` The line was chosen on held-out bookings, counting a false alarm (acting on a guest who then arrives) as ${text} a missed cancellation.`;
+}
+
+function render(response) {
+  const r = response.body;
+  const p = r.cancellation_probability;
+  const n = pct(p);
+  const shown = n < 1 ? "&lt;1" : n > 99 ? "&gt;99" : String(n);
+  const inHundred = n < 1 ? "Fewer than 1" : n > 99 ? "More than 99" : `About ${n}`;
+  const label = { low: "Low risk", medium: "Medium risk", high: "High risk" }[r.risk_band] || "Risk";
+  const line = pct(r.threshold);
+  const reason = thresholdReason();
+  const action = r.will_cancel
+    ? `This estimate is at or above the decision line of ${line}%, so the model flags the booking: the hotel
+       could expect the room to come free, or ask for a deposit.`
+    : `This estimate is below the decision line of ${line}%, so the model does not flag the booking: plan for
+       the guest to arrive.`;
+  const unseenNames = { agent_id: "agent ID", company_id: "company ID", reserved_room_type: "room type", market_segment: "market segment",
+                        distribution_channel: "channel", deposit_type: "deposit type", customer_type: "customer type" };
+  const unseen = (r.unseen_categories || []).map((u) => unseenNames[u] || String(u).replace(/_/g, " "));
+  const unseenNote = unseen.length
+    ? `<p class="notice"><strong>Less certain than usual.</strong> The model never saw this ${esc(unseen.join(" and "))}
+       in training, so it scored ${unseen.length > 1 ? "them" : "it"} as "unknown".</p>` : "";
+  const timing = [`Model ${esc(r.model_version)}`];
+  const serverMs = response.serverMs || r.latency_ms;
+  if (serverMs) timing.push(`${Number(serverMs).toFixed(1)} ms on the server`);
+  timing.push(`${Math.round(response.clientMs)} ms including the network`);
+
+  result.innerHTML = `
+    <h2 class="verdict band-${esc(r.risk_band)}" id="result-title">${label}</h2>
+    <p class="figure">${shown}<small>%</small></p>
+    <p class="plain"><strong>chance this booking is cancelled.</strong><br>
+      Put another way: ${inHundred.toLowerCase()} in 100 bookings like this one are cancelled.</p>
+    <div class="scale" role="img" aria-label="Estimate ${n} percent; decision line at ${line} percent">
+      <span class="marker" style="left:${(Math.min(1, Math.max(0, p)) * 100).toFixed(1)}%"></span>
+      <span class="threshold" style="left:${(r.threshold * 100).toFixed(1)}%">decision line ${line}%</span>
+    </div>
+    <div class="scale-ends"><span>0%</span><span>100%</span></div>
+    <p class="explain" data-reason="${reason ? "1" : ""}">${action}${esc(reason)}</p>
+    ${unseenNote}
+    <div class="feedback" id="feedback">
+      <p>Know how this booking ended? Report it, as a hotel would once the arrival date has passed:</p>
+      <div class="feedback-row">
+        <button type="button" class="ghost" data-outcome="true">It was cancelled</button>
+        <button type="button" class="ghost" data-outcome="false">The guest arrived</button>
+      </div>
+    </div>
+    <p class="meta">${timing.join(", ")}</p>`;
+  result.querySelectorAll("[data-outcome]").forEach((button) => {
+    button.addEventListener("click", () => sendFeedback(r, button.dataset.outcome === "true"));
+  });
+}
+
+async function sendFeedback(prediction, wasCancelled) {
+  const box = document.getElementById("feedback");
+  const buttons = box.querySelectorAll("button");
+  buttons.forEach((b) => { b.disabled = true; });
+  const fail = (text) => {
+    buttons.forEach((b) => { b.disabled = false; });
+    let note = box.querySelector(".notice");
+    if (!note) { note = document.createElement("p"); note.className = "notice error"; box.appendChild(note); }
+    note.textContent = text;
+  };
+  try {
+    const response = await postJson("/api/v1/feedback", {
+      prediction_id: prediction.prediction_id, was_cancelled: wasCancelled,
+      cancellation_probability: prediction.cancellation_probability, will_cancel: prediction.will_cancel,
+      model_version: prediction.model_version });
+    if (!response.ok || !response.body || !response.body.received) {
+      fail(`The outcome was not recorded: ${serverProblems(response).join("; ")}`);
+      return;
+    }
+    const right = prediction.will_cancel === wasCancelled;
+    const where = response.body.stored === "durable" ? "kept in the feedback database"
+      : "kept in this server's memory only, so it will be lost when the server restarts";
+    box.innerHTML = `<p class="notice" id="feedback-done"><strong>Thank you, recorded:</strong>
+      ${wasCancelled ? "the booking was cancelled" : "the guest arrived"}. The model's call was
+      ${right ? "right" : "wrong"} this time. The report is ${esc(where)}.</p>`;
+    try {
+      const summary = await call("/api/v1/feedback/summary");
+      if (summary.ok && summary.body) {
+        const d = summary.body.decisions || {};
+        const done = document.getElementById("feedback-done");
+        const accuracy = d.accuracy == null ? ""
+          : ` On the ${d.records} that include its prediction, the model was right ${pct(d.accuracy)}% of the time.`;
+        if (done) done.insertAdjacentHTML("beforeend", ` ${esc(summary.body.records)} outcome${summary.body.records === 1 ? "" : "s"}
+          reported so far.${esc(accuracy)} <a href="${esc(API)}/api/v1/feedback/summary">See the summary</a>.`);
+      }
+    } catch { /* the confirmation above is enough */ }
+  } catch {
+    fail("The outcome was not recorded: the server could not be reached. Please try again.");
+  }
+}
+
+// On a phone the result sits below the form: bring it into view when the visitor asked for it.
+function revealResult() {
+  if (!window.matchMedia("(max-width: 860px)").matches) return;
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelector(".tile").scrollIntoView({ block: "start", behavior: calm ? "auto" : "smooth" });
+}
+
+async function estimate(askedByVisitor = true) {
+  const problems = clientProblems();
+  if (problems.length) {
+    showProblems("Please check the booking", problems);
+    if (askedByVisitor) revealResult();
+    const first = form.querySelector('[aria-invalid="true"]');
+    if (first && askedByVisitor) first.focus({ preventScroll: true });
+    return;
+  }
+  const mine = ++requestNumber;
+  const body = payload();
+  submitButton.disabled = true;
+  submitButton.textContent = "Estimating...";
+  showWaiting(false);
+  if (askedByVisitor) revealResult();
+  const onSlow = () => { if (mine === requestNumber) showWaiting(true); };
+  try {
+    let response;
+    try {
+      response = await postJson("/api/v1/predict", body, onSlow);
+    } catch {
+      // The first attempt can fail while a sleeping server starts: wait a moment and try once more.
+      if (mine === requestNumber) showWaiting(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      response = await postJson("/api/v1/predict", body, onSlow);
+    }
+    if (mine !== requestNumber) return;
+    if (response.ok && response.body && typeof response.body.cancellation_probability === "number") render(response);
+    else if (response.status === 422 || response.status === 415 || response.status === 413 || response.status === 400)
+      showProblems("The server did not accept this booking", serverProblems(response));
+    else showProblems("The estimate could not be made", serverProblems(response), true);
+  } catch {
+    if (mine !== requestNumber) return;
+    showProblems("The server could not be reached", [
+      "Either the connection dropped or the server took too long to wake up. Check your connection and try again.",
+    ], true);
+  } finally {
+    if (mine === requestNumber) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Estimate cancellation risk";
+    }
+  }
+}
+
+const METRICS = [
+  ["roc_auc", "Ranking quality (ROC-AUC: 0.5 is guessing, 1 is perfect)", (v) => v.toFixed(3)],
+  ["precision", "Of the bookings it flags, the share that really cancel (precision)", (v) => `${pct(v)}%`],
+  ["recall", "Of all cancellations, the share it flags (recall)", (v) => `${pct(v)}%`],
+  ["accuracy", "Bookings called correctly overall (accuracy)", (v) => `${pct(v)}%`],
+  ["brier", "Probability error (Brier score: lower is better, 0 is perfect)", (v) => v.toFixed(3)],
+];
+const EXCLUSION_REASONS = {
+  outcome: "They are the answer itself",
+  known_only_after_booking: "Only known after the booking is made",
+  timing_uncertain: "Unclear when they are recorded, so left out to be safe",
+  never_used: "Would stop the model from working in later years",
+};
+const COLUMN_NAMES = {
+  reservation_status: "final reservation status", reservation_status_date: "date of the final status",
+  assigned_room_type: "room actually assigned", booking_changes: "later changes to the booking",
+  days_in_waiting_list: "days on the waiting list", required_car_parking_spaces: "parking spaces requested",
+  total_of_special_requests: "special requests", country: "guest nationality", arrival_date_year: "arrival year",
+};
+
+async function loadCard() {
+  const cardBox = document.getElementById("card"), excludedBox = document.getElementById("excluded");
+  try {
+    const response = await call("/api/v1/model");
+    if (!response.ok || !response.body) throw new Error("no model card");
+    card = response.body;
+    const m = card.test_metrics || {};
+    const rows = METRICS.filter(([key]) => typeof m[key] === "number")
+      .map(([key, label, show]) => `<dt>${esc(label)}</dt><dd>${esc(show(m[key]))}</dd>`);
+    if (typeof card.threshold === "number") rows.push(`<dt>Decision line (threshold)</dt><dd>${pct(card.threshold)}%</dd>`);
+    const trained = card.trained_utc ? `, trained ${esc(String(card.trained_utc).slice(0, 10))}` : "";
+    cardBox.innerHTML = `
+      <p>Measured on test bookings the model never saw during training, at its decision line:</p>
+      <dl>${rows.join("")}</dl>
+      ${thresholdReason() ? `<p>${esc(thresholdReason().trim())}</p>` : ""}
+      <p>Model: ${esc(card.estimator || "unknown")}, version ${esc(card.model_version || "unknown")}${trained}.
+        ${card.calibrated === true ? "Probabilities were calibrated after training." : ""}
+        Everything here is read from <a href="${esc(API)}/api/v1/model">the model card</a>.</p>`;
+    const groups = card.excluded_columns || {};
+    excludedBox.innerHTML = Object.entries(groups).filter(([, columns]) => Array.isArray(columns) && columns.length)
+      .map(([reason, columns]) => `
+        <h3>${esc(EXCLUSION_REASONS[reason] || reason.replace(/_/g, " "))}</h3>
+        <ul>${columns.map((c) => `<li>${esc(COLUMN_NAMES[c] || String(c).replace(/_/g, " "))}</li>`).join("")}</ul>`).join("");
+    if (card.data && card.data.citation) {
+      document.getElementById("source").textContent = `Data: ${card.data.citation}${card.data.license ? ` (${card.data.license})` : ""}.`;
+    }
+  } catch {
+    cardBox.innerHTML = `<p class="notice error">The model's test results could not be loaded just now. They are
+      published at <a href="${esc(API)}/api/v1/model">/api/v1/model</a>.</p>`;
+    excludedBox.innerHTML = "";
+  }
+}
+
+// Take the form's limits from the API's own schema, so the page and the server cannot disagree.
+async function loadLimits() {
+  try {
+    const response = await call("/openapi.json");
+    const props = response.body.components.schemas.Booking.properties;
+    const numeric = (name) => {
+      const p = props[name] || {};
+      return (p.anyOf ? p.anyOf.find((option) => option.type !== "null") : p) || {};
+    };
+    for (const name of NUMBER_FIELDS) {
+      if (name === "nights") continue;
+      const limits = numeric(name);
+      if (Number.isFinite(limits.minimum)) form[name].min = limits.minimum;
+      if (Number.isFinite(limits.maximum)) form[name].max = limits.maximum;
+    }
+    const weekend = numeric("stays_in_weekend_nights").maximum, week = numeric("stays_in_week_nights").maximum;
+    if (Number.isFinite(weekend) && Number.isFinite(week)) form.nights.max = weekend + week;
+    if (Number.isFinite(numeric("lead_time").maximum)) maxLeadTime = numeric("lead_time").maximum;
+  } catch { /* the limits written in the HTML stay in force; the server still checks everything */ }
+}
+
+document.querySelectorAll("[data-api-link]").forEach((a) => { if (API) a.href = API + a.dataset.apiLink; });
+document.querySelectorAll(".preset").forEach((button) => {
+  button.addEventListener("click", () => { applyPreset(button.dataset.preset); estimate(); });
+});
+form.addEventListener("input", () => { markPreset(null); updateDerived(); });
+form.addEventListener("submit", (event) => { event.preventDefault(); estimate(); });
+
+applyPreset("online");
+loadLimits();
+loadCard().then(() => {
+  // If the first estimate is already on screen, add the reason for the threshold now that it is known.
+  const explain = result.querySelector(".explain");
+  if (explain && result.querySelector(".figure") && !explain.dataset.reason) {
+    explain.dataset.reason = "1";
+    explain.append(thresholdReason());
+  }
+});
+estimate(false);
+</script>
+</body>
+</html>
