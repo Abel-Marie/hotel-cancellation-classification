@@ -1,0 +1,8 @@
+{
+  "name": "",
+  "student_id": "",
+  "course": "",
+  "instructor": "",
+  "institution": "",
+  "target_origin": "I took 0.85 from the scores commonly reported for this dataset, which are roughly 0.85 to 0.95, before I knew that those results use columns recorded after booking. The leakage audit (Section 3.6) shows that this is where most of that performance comes from, so the target turned out to be a benchmark for an easier problem than the one defined here."
+}
