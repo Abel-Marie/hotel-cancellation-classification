@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: ^service/core/features\.py$
+  - repo: local
+    hooks:
+      - id: service-features-in-sync
+        name: service feature code matches rowlevel.py
+        entry: python -m pytest tests/parity/test_service_sync.py -q
+        language: system
+        pass_filenames: false
+        files: ^(src/hotel_cancellation/rowlevel\.py|service/core/features\.py)$
