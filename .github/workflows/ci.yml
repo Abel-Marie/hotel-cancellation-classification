@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: make lint
+      - name: Unit, API and parity tests (uses the committed model in service/)
+        run: python -m pytest -m "not slow" -q
+      - name: End-to-end pipeline in fast mode
+        run: python -m pytest -m slow -q
+      - name: Notebook builds and runs alone (fast mode)
+        run: |
+          python scripts/build_notebooks.py --no-execute
+          python scripts/check_standalone.py
