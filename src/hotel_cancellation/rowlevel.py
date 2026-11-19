@@ -1,0 +1,167 @@
+"""Per-row feature derivations in pure Python (standard library only).
+
+This file is the single source of truth for feature logic. The training
+pipeline applies it to every row, and ``scripts/sync_service.py`` copies it
+unchanged into ``service/core/features.py`` so the API computes exactly the
+same features. Do not import numpy, pandas or scikit-learn here.
+
+Features are grouped by the raw column they come from, so the leakage audit
+can add or remove whole groups.
+"""
+
+from __future__ import annotations
+
+import math
+from datetime import date, timedelta
+
+MONTH_NUMBERS = {
+    "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6, "July": 7,
+    "August": 8, "September": 9, "October": 10, "November": 11, "December": 12,
+}
+
+CATEGORICAL_FEATURES = frozenset({
+    "hotel", "meal", "market_segment", "distribution_channel", "reserved_room_type",
+    "deposit_type", "customer_type", "agent_id", "company_id", "country", "assigned_room_type",
+    "reservation_status",
+})
+
+HOME_COUNTRY = "PRT"
+
+
+def is_missing(value) -> bool:
+    """True for None and NaN (pandas passes missing numbers as float NaN)."""
+    return value is None or (isinstance(value, float) and value != value)
+
+
+def as_number(value, default: float = 0.0) -> float:
+    return default if is_missing(value) else float(value)
+
+
+def arrival_date(r: dict) -> date:
+    return date(int(r["arrival_date_year"]), MONTH_NUMBERS[r["arrival_date_month"]],
+                int(r["arrival_date_day_of_month"]))
+
+
+def base_features(r: dict) -> dict:
+    """Features known when the booking is made."""
+    arrival = arrival_date(r)
+    weekend = as_number(r["stays_in_weekend_nights"])
+    weekday = as_number(r["stays_in_week_nights"])
+    nights = weekend + weekday
+    adults = as_number(r["adults"])
+    children = as_number(r["children"])
+    babies = as_number(r["babies"])
+    prev_cancelled = as_number(r["previous_cancellations"])
+    prev_kept = as_number(r["previous_bookings_not_canceled"])
+    history = prev_cancelled + prev_kept
+    month_angle = 2 * math.pi * (arrival.month - 1) / 12
+    return {
+        "hotel": str(r["hotel"]),
+        "meal": str(r["meal"]),
+        "market_segment": str(r["market_segment"]),
+        "distribution_channel": str(r["distribution_channel"]),
+        "reserved_room_type": str(r["reserved_room_type"]),
+        "deposit_type": str(r["deposit_type"]),
+        "customer_type": str(r["customer_type"]),
+        "agent_id": "none" if is_missing(r.get("agent")) else str(int(r["agent"])),
+        "log_lead_time": math.log1p(as_number(r["lead_time"])),
+        "arrival_week": float(arrival.isocalendar()[1]),
+        "arrival_weekday": float(arrival.weekday()),
+        "month_sin": math.sin(month_angle),
+        "month_cos": math.cos(month_angle),
+        "stays_in_weekend_nights": weekend,
+        "stays_in_week_nights": weekday,
+        "total_nights": nights,
+        "weekend_share": weekend / nights if nights > 0 else 0.0,
+        "adults": adults,
+        "children": children,
+        "babies": babies,
+        "total_guests": adults + children + babies,
+        "is_family": 1.0 if children + babies > 0 else 0.0,
+        "is_repeated_guest": as_number(r["is_repeated_guest"]),
+        "previous_cancellations": prev_cancelled,
+        "previous_bookings_not_canceled": prev_kept,
+        "has_booking_history": 1.0 if history > 0 else 0.0,
+        "prior_cancel_ratio": prev_cancelled / history if history > 0 else 0.0,
+        "has_company": 0.0 if is_missing(r.get("company")) else 1.0,
+    }
+
+
+def adr_features(r: dict) -> dict:
+    """Price per night, total and per paying guest (babies excluded)."""
+    adr = as_number(r["adr"])
+    paying = max(as_number(r["adults"]) + as_number(r["children"]), 1.0)
+    return {"adr": adr, "adr_per_person": adr / paying}
+
+
+def parking_features(r: dict) -> dict:
+    return {"required_car_parking_spaces": as_number(r["required_car_parking_spaces"])}
+
+
+def requests_features(r: dict) -> dict:
+    return {"total_of_special_requests": as_number(r["total_of_special_requests"])}
+
+
+def country_features(r: dict) -> dict:
+    country = "UNK" if is_missing(r.get("country")) else str(r["country"])
+    return {"country": country, "is_domestic": 1.0 if country == HOME_COUNTRY else 0.0}
+
+
+def candidate_features(r: dict) -> dict:
+    """More booking-time features, all legitimate, tested in the notebook and not adopted.
+
+    The booking date is the arrival date minus the lead time, so it is known on the day of booking.
+    """
+    arrival = arrival_date(r)
+    booked = arrival - timedelta(days=int(as_number(r["lead_time"])))
+    nights = as_number(r["stays_in_weekend_nights"]) + as_number(r["stays_in_week_nights"])
+    booked_angle = 2 * math.pi * (booked.month - 1) / 12
+    return {
+        "company_id": "none" if is_missing(r.get("company")) else str(int(r["company"])),
+        "booking_weekday": float(booked.weekday()),
+        "booking_month_sin": math.sin(booked_angle),
+        "booking_month_cos": math.cos(booked_angle),
+        "booking_day_of_year": float(booked.timetuple().tm_yday),
+        "arrival_day_of_year": float(arrival.timetuple().tm_yday),
+        "arrival_day_of_month": float(arrival.day),
+        "stay_value": as_number(r["adr"]) * nights,
+    }
+
+
+def tier2_features(r: dict) -> dict:
+    """Known only after booking: used in the leakage ablation, never deployed."""
+    return {
+        "assigned_room_type": str(r["assigned_room_type"]),
+        "room_changed": 1.0 if r["assigned_room_type"] != r["reserved_room_type"] else 0.0,
+        "booking_changes": as_number(r["booking_changes"]),
+        "days_in_waiting_list": as_number(r["days_in_waiting_list"]),
+    }
+
+
+def tier1_features(r: dict) -> dict:
+    """The outcome itself: used only to show what leakage looks like."""
+    status_day = date.fromisoformat(str(r["reservation_status_date"])[:10])
+    return {
+        "reservation_status": str(r["reservation_status"]),
+        "status_days_before_arrival": float((arrival_date(r) - status_day).days),
+    }
+
+
+FEATURE_SOURCES = {
+    "base": base_features,
+    "adr": adr_features,
+    "required_car_parking_spaces": parking_features,
+    "total_of_special_requests": requests_features,
+    "country": country_features,
+    "candidate": candidate_features,
+    "tier2": tier2_features,
+    "tier1": tier1_features,
+}
+
+
+def derive_features(r: dict, sources: list[str]) -> dict:
+    """All features from the given groups, in a stable order."""
+    out: dict = {}
+    for source in sources:
+        out.update(FEATURE_SOURCES[source](r))
+    return out
