@@ -1,0 +1,18 @@
+{
+  "format": "onnx",
+  "model_kb": 6510.8,
+  "model_version": "lgbm-99276044514e",
+  "parity_rows": 200,
+  "parity_max_abs_diff": 1.3374792813547476e-07,
+  "parity_ok": true,
+  "vocabulary_sizes": {
+    "hotel": 2,
+    "meal": 4,
+    "market_segment": 8,
+    "distribution_channel": 5,
+    "reserved_room_type": 9,
+    "deposit_type": 3,
+    "customer_type": 4,
+    "agent_id": 310
+  }
+}

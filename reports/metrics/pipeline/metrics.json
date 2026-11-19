@@ -1,0 +1,5419 @@
+{
+  "project": "hotel-cancellation-classification",
+  "fast_mode": false,
+  "seed": 42,
+  "data": {
+    "audit": {
+      "rows": 119390,
+      "columns": 32,
+      "missing_values": {
+        "children": 4,
+        "country": 488,
+        "agent": 16340,
+        "company": 112593
+      },
+      "exact_duplicate_rows": 31994,
+      "target_rate": 0.37041628277075134,
+      "arrival_years": [
+        2015,
+        2016,
+        2017
+      ]
+    },
+    "cleaning": [
+      {
+        "rule": "drop_exact_duplicates",
+        "rows_before": 119390,
+        "rows_after": 87396,
+        "rows_removed": 31994,
+        "values_changed": null,
+        "why": "Identical rows would land in both train and test and inflate scores."
+      },
+      {
+        "rule": "drop_zero_guests",
+        "rows_before": 87396,
+        "rows_after": 87230,
+        "rows_removed": 166,
+        "values_changed": null,
+        "why": "A booking for nobody is a data-entry error."
+      },
+      {
+        "rule": "drop_negative_price",
+        "rows_before": 87230,
+        "rows_after": 87229,
+        "rows_removed": 1,
+        "values_changed": null,
+        "why": "A negative nightly rate is impossible."
+      },
+      {
+        "rule": "drop_extreme_price",
+        "rows_before": 87229,
+        "rows_after": 87228,
+        "rows_removed": 1,
+        "values_changed": null,
+        "why": "Rates above 1000 per night are entry errors in this data."
+      },
+      {
+        "rule": "fill_children_missing_as_zero",
+        "rows_before": 87228,
+        "rows_after": 87228,
+        "rows_removed": 0,
+        "values_changed": 4,
+        "why": "Missing children count means none."
+      },
+      {
+        "rule": "fill_country_missing_as_UNK",
+        "rows_before": 87228,
+        "rows_after": 87228,
+        "rows_removed": 0,
+        "values_changed": 447,
+        "why": "Kept as its own category."
+      },
+      {
+        "rule": "merge_meal_undefined_into_SC",
+        "rows_before": 87228,
+        "rows_after": 87228,
+        "rows_removed": 0,
+        "values_changed": 492,
+        "why": "Dataset paper: both codes mean no meal package."
+      },
+      {
+        "rule": "keep_agent_company_missing",
+        "rows_before": 87228,
+        "rows_after": 87228,
+        "rows_removed": 0,
+        "values_changed": 0,
+        "why": "Missing agent or company means the booking had none; handled as a feature."
+      }
+    ],
+    "rows_after_cleaning": 87228,
+    "duplicate_rows_cancel_rate": 0.6313371257110708,
+    "split": {
+      "train": {
+        "rows": 61058,
+        "positive_rate": 0.27524648694683745
+      },
+      "validation": {
+        "rows": 13085,
+        "positive_rate": 0.27520061138708446
+      },
+      "test": {
+        "rows": 13085,
+        "positive_rate": 0.27520061138708446
+      },
+      "test_rows_sha256": "4e2bceeeebaa0bdd094da1b7f551e17d60c47f2a0cc7b2b99da881917598d89e"
+    }
+  },
+  "features": {
+    "sources": [
+      "base",
+      "adr"
+    ],
+    "categorical": [
+      "hotel",
+      "meal",
+      "market_segment",
+      "distribution_channel",
+      "reserved_room_type",
+      "deposit_type",
+      "customer_type",
+      "agent_id"
+    ],
+    "numeric": [
+      "log_lead_time",
+      "arrival_week",
+      "arrival_weekday",
+      "month_sin",
+      "month_cos",
+      "stays_in_weekend_nights",
+      "stays_in_week_nights",
+      "total_nights",
+      "weekend_share",
+      "adults",
+      "children",
+      "babies",
+      "total_guests",
+      "is_family",
+      "is_repeated_guest",
+      "previous_cancellations",
+      "previous_bookings_not_canceled",
+      "has_booking_history",
+      "prior_cancel_ratio",
+      "has_company",
+      "adr",
+      "adr_per_person"
+    ]
+  },
+  "leakage": {
+    "ablation": {
+      "ladder": [
+        {
+          "step": "Base features only",
+          "sources": [
+            "base"
+          ],
+          "val_roc_auc": 0.8024693454686131
+        },
+        {
+          "step": "Deployed (base + kept Tier 3)",
+          "sources": [
+            "base",
+            "adr"
+          ],
+          "val_roc_auc": 0.8046527389235687
+        },
+        {
+          "step": "+ all Tier 3 (timing uncertain)",
+          "sources": [
+            "base",
+            "adr",
+            "required_car_parking_spaces",
+            "total_of_special_requests",
+            "country"
+          ],
+          "val_roc_auc": 0.9097711417619012
+        },
+        {
+          "step": "+ Tier 2 (known after booking)",
+          "sources": [
+            "base",
+            "adr",
+            "required_car_parking_spaces",
+            "total_of_special_requests",
+            "country",
+            "tier2"
+          ],
+          "val_roc_auc": 0.919655267041783
+        },
+        {
+          "step": "+ Tier 1 (the outcome itself)",
+          "sources": [
+            "base",
+            "adr",
+            "required_car_parking_spaces",
+            "total_of_special_requests",
+            "country",
+            "tier2",
+            "tier1"
+          ],
+          "val_roc_auc": 1.0
+        }
+      ],
+      "tier3_single": [
+        {
+          "column": "adr",
+          "decision": "keep",
+          "val_roc_auc": 0.8046527389235687,
+          "gain_over_base": 0.002183393454955551
+        },
+        {
+          "column": "required_car_parking_spaces",
+          "decision": "exclude",
+          "val_roc_auc": 0.8276506648945048,
+          "gain_over_base": 0.025181319425891635
+        },
+        {
+          "column": "total_of_special_requests",
+          "decision": "exclude",
+          "val_roc_auc": 0.8313584398447827,
+          "gain_over_base": 0.0288890943761696
+        },
+        {
+          "column": "country",
+          "decision": "exclude",
+          "val_roc_auc": 0.8711933139618301,
+          "gain_over_base": 0.06872396849321694
+        }
+      ]
+    },
+    "dedup_sensitivity": {
+      "val_roc_auc_deduplicated": 0.8046527389235687,
+      "val_roc_auc_duplicates_kept": 0.8888672782958245,
+      "inflation": 0.08421453937225576,
+      "share_of_val_rows_also_in_train_when_kept": 0.30757185997092046
+    },
+    "decisions": {
+      "adr": {
+        "decision": "keep",
+        "reason": "The price is agreed when the room is booked. It can change later, but the cancellation rate by price band changes smoothly, with no value that only guests who arrived would have."
+      },
+      "required_car_parking_spaces": {
+        "decision": "exclude",
+        "reason": "Every booking with a parking space has a cancellation rate of exactly zero. Parking is recorded at check-in, so the value encodes the outcome."
+      },
+      "total_of_special_requests": {
+        "decision": "exclude",
+        "reason": "Requests can be added at any time up to check-in, and guests who cancel never reach that point. The timing cannot be established, so the rule \"when in doubt, exclude\" applies."
+      },
+      "country": {
+        "decision": "exclude",
+        "reason": "Nationality is usually confirmed at check-in. Cancelled bookings keep the value entered at booking, which tends to default to the hotels' home country, so Portugal shows an implausibly high cancellation rate."
+      }
+    }
+  },
+  "candidates": [
+    {
+      "model": "lgbm",
+      "cv_roc_auc_mean": 0.7725835994959008,
+      "cv_roc_auc_std": 0.006731657512987532,
+      "cv_pr_auc_mean": 0.5845978082333946,
+      "val_roc_auc": 0.8046527389235687,
+      "val_pr_auc": 0.6339955627283923,
+      "val_accuracy_at_0_5": 0.7754680932365304,
+      "val_precision_at_0_5": 0.6668344237544036,
+      "val_recall_at_0_5": 0.3679533462926965,
+      "val_f1_at_0_5": 0.4742304939155333,
+      "val_brier": 0.14933972340084226,
+      "fit_seconds": 11.08,
+      "predict_ms_per_1k_rows": 36.62,
+      "size_kb": 2672.1,
+      "notes": "Gradient boosting in LightGBM; usually the strongest on tabular data. Explained with SHAP."
+    },
+    {
+      "model": "rf",
+      "cv_roc_auc_mean": 0.7806745306768378,
+      "cv_roc_auc_std": 0.003234648588266015,
+      "cv_pr_auc_mean": 0.5960380068158712,
+      "val_roc_auc": 0.803324876601244,
+      "val_pr_auc": 0.631273364515331,
+      "val_accuracy_at_0_5": 0.7748567061520826,
+      "val_precision_at_0_5": 0.6649874055415617,
+      "val_recall_at_0_5": 0.3665648430991391,
+      "val_f1_at_0_5": 0.47261009667024706,
+      "val_brier": 0.15004625295348692,
+      "fit_seconds": 24.46,
+      "predict_ms_per_1k_rows": 69.75,
+      "size_kb": 123461.8,
+      "notes": "Averages many trees; robust, but large to store and slower to score."
+    },
+    {
+      "model": "hgb",
+      "cv_roc_auc_mean": 0.7791192473264505,
+      "cv_roc_auc_std": 0.005010097180843553,
+      "cv_pr_auc_mean": 0.5921663209143526,
+      "val_roc_auc": 0.7979744250712494,
+      "val_pr_auc": 0.6241113743336295,
+      "val_accuracy_at_0_5": 0.7723347344287352,
+      "val_precision_at_0_5": 0.6789413118527042,
+      "val_recall_at_0_5": 0.3276867536795335,
+      "val_f1_at_0_5": 0.44203034276081665,
+      "val_brier": 0.1521068929489373,
+      "fit_seconds": 5.86,
+      "predict_ms_per_1k_rows": 11.76,
+      "size_kb": 370.9,
+      "notes": "Gradient boosting in scikit-learn; strong and fast on tabular data."
+    },
+    {
+      "model": "mlp",
+      "cv_roc_auc_mean": 0.7746383917269011,
+      "cv_roc_auc_std": 0.004020660765401025,
+      "cv_pr_auc_mean": 0.5864465097780144,
+      "val_roc_auc": 0.7926778505103848,
+      "val_pr_auc": 0.6059209110291354,
+      "val_accuracy_at_0_5": 0.7669086740542606,
+      "val_precision_at_0_5": 0.6195227765726681,
+      "val_recall_at_0_5": 0.3965565120799778,
+      "val_f1_at_0_5": 0.48357602438198444,
+      "val_brier": 0.1540345031872526,
+      "fit_seconds": 49.8,
+      "predict_ms_per_1k_rows": 5.64,
+      "size_kb": 296.5,
+      "notes": "Small neural network; needs scaling, hardest to interpret."
+    },
+    {
+      "model": "logreg",
+      "cv_roc_auc_mean": 0.772791636906199,
+      "cv_roc_auc_std": 0.0025009468443255504,
+      "cv_pr_auc_mean": 0.5849041153056134,
+      "val_roc_auc": 0.7776839192824618,
+      "val_pr_auc": 0.5949639802824567,
+      "val_accuracy_at_0_5": 0.7636988918609094,
+      "val_precision_at_0_5": 0.6382400869092885,
+      "val_recall_at_0_5": 0.3262982504859761,
+      "val_f1_at_0_5": 0.4318265343623668,
+      "val_brier": 0.15746123478181828,
+      "fit_seconds": 6.87,
+      "predict_ms_per_1k_rows": 7.72,
+      "size_kb": 11.4,
+      "notes": "Linear in the features; every coefficient can be read directly."
+    },
+    {
+      "model": "tree",
+      "cv_roc_auc_mean": 0.7273998297495,
+      "cv_roc_auc_std": 0.0025882358553203917,
+      "cv_pr_auc_mean": 0.5250577930681201,
+      "val_roc_auc": 0.7498647219579454,
+      "val_pr_auc": 0.5625622946803603,
+      "val_accuracy_at_0_5": 0.749789835689721,
+      "val_precision_at_0_5": 0.55964976286027,
+      "val_recall_at_0_5": 0.4259927797833935,
+      "val_f1_at_0_5": 0.4837590665405235,
+      "val_brier": 0.17183497517825855,
+      "fit_seconds": 2.05,
+      "predict_ms_per_1k_rows": 3.87,
+      "size_kb": 332.5,
+      "notes": "One readable tree, but unstable and prone to overfitting."
+    },
+    {
+      "model": "dummy",
+      "cv_roc_auc_mean": 0.5,
+      "cv_roc_auc_std": 0.0,
+      "cv_pr_auc_mean": 0.27525000137631883,
+      "val_roc_auc": 0.5,
+      "val_pr_auc": 0.27520061138708446,
+      "val_accuracy_at_0_5": 0.7247993886129156,
+      "val_precision_at_0_5": 0.0,
+      "val_recall_at_0_5": 0.0,
+      "val_f1_at_0_5": 0.0,
+      "val_brier": 0.19946523698382637,
+      "fit_seconds": 2.05,
+      "predict_ms_per_1k_rows": 24.03,
+      "size_kb": 10.0,
+      "notes": "Predicts the base rate for everyone. The floor every model must beat."
+    }
+  ],
+  "experiments": {
+    "encodings": [
+      {
+        "encoding": "ordinal (deployed)",
+        "cv_roc_auc_mean": 0.7725835994959008,
+        "cv_roc_auc_std": 0.006731657512987532,
+        "cv_pr_auc_mean": 0.5845978082333946,
+        "model_columns": 30,
+        "fit_seconds_per_fold": 3.0848634243011475
+      },
+      {
+        "encoding": "one-hot",
+        "cv_roc_auc_mean": 0.7751985689774074,
+        "cv_roc_auc_std": 0.004288514281569883,
+        "cv_pr_auc_mean": 0.5910098726527876,
+        "model_columns": 89,
+        "fit_seconds_per_fold": 2.4808236757914224
+      },
+      {
+        "encoding": "target encoding",
+        "cv_roc_auc_mean": 0.7775584448916572,
+        "cv_roc_auc_std": 0.004032135983986516,
+        "cv_pr_auc_mean": 0.5937446924528662,
+        "model_columns": 30,
+        "fit_seconds_per_fold": 2.0943755308787027
+      }
+    ],
+    "imbalance": [
+      {
+        "method": "none",
+        "val_roc_auc": 0.7879467937991357,
+        "val_pr_auc": 0.6112982220654679,
+        "val_brier": 0.15517836744533775,
+        "mean_predicted_probability": 0.26621462158427084,
+        "actual_rate": 0.27520061138708446
+      },
+      {
+        "method": "class weights",
+        "val_roc_auc": 0.7877758808269553,
+        "val_pr_auc": 0.6097644862379694,
+        "val_brier": 0.17343816177985505,
+        "mean_predicted_probability": 0.38216959305450077,
+        "actual_rate": 0.27520061138708446
+      },
+      {
+        "method": "SMOTENC oversampling",
+        "val_roc_auc": 0.7851047690370464,
+        "val_pr_auc": 0.6039714811197603,
+        "val_brier": 0.15737982368107803,
+        "mean_predicted_probability": 0.2869784645894513,
+        "actual_rate": 0.27520061138708446
+      }
+    ],
+    "feature_additions": [
+      {
+        "features": "deployed features",
+        "columns": 30,
+        "cv_roc_auc_mean": 0.798594462493292,
+        "cv_roc_auc_std": 0.0014998242417137504,
+        "gain_mean": 0.0,
+        "gain_min": 0.0,
+        "gain_max": 0.0
+      },
+      {
+        "features": "deployed + candidate features",
+        "columns": 38,
+        "cv_roc_auc_mean": 0.8003141147356524,
+        "cv_roc_auc_std": 0.003015131631515652,
+        "gain_mean": 0.001719652242360444,
+        "gain_min": -0.0003721249674752958,
+        "gain_max": 0.003298132311859492
+      }
+    ]
+  },
+  "tuning": {
+    "subsample_rows": 20000,
+    "logreg_grid": {
+      "strategy": "grid",
+      "model": "logreg",
+      "configs_tried": 8,
+      "fits": 24,
+      "seconds": 30.0,
+      "best_score": 0.7729365069265817,
+      "best_params": {
+        "C": 0.1,
+        "class_weight": null
+      },
+      "best_so_far": [
+        0.7693935406870166,
+        0.7696594053758856,
+        0.7729365069265817,
+        0.7729365069265817,
+        0.7729365069265817,
+        0.7729365069265817,
+        0.7729365069265817,
+        0.7729365069265817
+      ]
+    },
+    "rf_random": {
+      "strategy": "random",
+      "model": "rf",
+      "configs_tried": 20,
+      "fits": 60,
+      "seconds": 289.1,
+      "best_score": 0.7818503150391543,
+      "best_params": {
+        "max_depth": 20,
+        "max_features": "sqrt",
+        "min_samples_leaf": 8,
+        "n_estimators": 288
+      },
+      "best_so_far": [
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543,
+        0.7818503150391543
+      ]
+    },
+    "lgbm_grid": {
+      "strategy": "grid",
+      "model": "lgbm",
+      "configs_tried": 24,
+      "fits": 72,
+      "seconds": 190.3,
+      "best_score": 0.7835090362006915,
+      "best_params": {
+        "learning_rate": 0.03,
+        "n_estimators": 200,
+        "num_leaves": 31
+      },
+      "best_so_far": [
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915,
+        0.7835090362006915
+      ]
+    },
+    "lgbm_random": {
+      "strategy": "random",
+      "model": "lgbm",
+      "configs_tried": 24,
+      "fits": 72,
+      "seconds": 166.0,
+      "best_score": 0.7856355772448941,
+      "best_params": {
+        "colsample_bytree": 0.5993578407670862,
+        "learning_rate": 0.010166803740022877,
+        "min_child_samples": 15,
+        "n_estimators": 598,
+        "num_leaves": 95,
+        "reg_lambda": 0.7004349545230062,
+        "subsample": 0.8950877702656028,
+        "subsample_freq": 1
+      },
+      "best_so_far": [
+        0.7403024345652232,
+        0.7536562814159238,
+        0.7817331762872617,
+        0.7817331762872617,
+        0.7817331762872617,
+        0.7834851300991081,
+        0.7834851300991081,
+        0.7834851300991081,
+        0.7834851300991081,
+        0.7834851300991081,
+        0.7834851300991081,
+        0.7834851300991081,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941,
+        0.7856355772448941
+      ]
+    },
+    "lgbm_bayesian": {
+      "strategy": "bayesian",
+      "model": "lgbm",
+      "configs_tried": 24,
+      "fits": 72,
+      "seconds": 128.9,
+      "best_score": 0.786561885482115,
+      "best_params": {
+        "num_leaves": 53,
+        "learning_rate": 0.019570454255242713,
+        "n_estimators": 276,
+        "min_child_samples": 10,
+        "subsample": 0.8849326278874722,
+        "colsample_bytree": 0.6866034875043562,
+        "reg_lambda": 0.21130894139130924,
+        "subsample_freq": 1
+      },
+      "best_so_far": [
+        0.7379238071120726,
+        0.7647736001481507,
+        0.7837787823926332,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7842893666039285,
+        0.7844443369140509,
+        0.7849119532838249,
+        0.7849119532838249,
+        0.786561885482115,
+        0.786561885482115,
+        0.786561885482115,
+        0.786561885482115,
+        0.786561885482115,
+        0.786561885482115,
+        0.786561885482115,
+        0.786561885482115,
+        0.786561885482115
+      ]
+    },
+    "lgbm_refine": {
+      "strategy": "bayesian, all training rows",
+      "model": "lgbm",
+      "configs_tried": 24,
+      "fits": 72,
+      "seconds": 465.9,
+      "best_score": 0.8043245694621417,
+      "best_params": {
+        "num_leaves": 136,
+        "learning_rate": 0.019948930432040424,
+        "n_estimators": 630,
+        "min_child_samples": 7,
+        "subsample": 0.8829843611389542,
+        "colsample_bytree": 0.5929159719177697,
+        "reg_lambda": 0.1407655368983871,
+        "subsample_freq": 1
+      },
+      "best_so_far": [
+        0.7979567247643243,
+        0.7979567247643243,
+        0.8017309847147436,
+        0.8017309847147436,
+        0.8017309847147436,
+        0.8017309847147436,
+        0.8017309847147436,
+        0.8017309847147436,
+        0.8017309847147436,
+        0.8017309847147436,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8031392555190723,
+        0.8043245694621417,
+        0.8043245694621417,
+        0.8043245694621417,
+        0.8043245694621417
+      ],
+      "rows": 61058,
+      "started_from": [
+        "untuned settings",
+        "best of grid search",
+        "best of random search",
+        "best of Bayesian search"
+      ],
+      "start_scores": [
+        0.7979567247643243,
+        0.793683158366382,
+        0.8017309847147436,
+        0.7984147030404246
+      ]
+    }
+  },
+  "champion": {
+    "name": "lgbm",
+    "params": {
+      "num_leaves": 136,
+      "learning_rate": 0.019948930432040424,
+      "n_estimators": 630,
+      "min_child_samples": 7,
+      "subsample": 0.8829843611389542,
+      "colsample_bytree": 0.5929159719177697,
+      "reg_lambda": 0.1407655368983871,
+      "subsample_freq": 1
+    },
+    "strategy": "bayesian, all training rows",
+    "val_roc_auc": 0.8097647555842014,
+    "best_val_roc_auc": 0.8097647555842014,
+    "tied_models": [
+      "lgbm"
+    ],
+    "rule": "best validation ROC-AUC; models within 0.002 of it are tied and the smallest tied model wins",
+    "comparison": [
+      {
+        "model": "logreg",
+        "strategy": "grid",
+        "cv_roc_auc": 0.7729365069265817,
+        "val_roc_auc": 0.7767225081931058,
+        "size_kb": 11.4,
+        "params": {
+          "C": 0.1,
+          "class_weight": null
+        }
+      },
+      {
+        "model": "rf",
+        "strategy": "random",
+        "cv_roc_auc": 0.7818503150391543,
+        "val_roc_auc": 0.8020464698228654,
+        "size_kb": 88321.1,
+        "params": {
+          "max_depth": 20,
+          "max_features": "sqrt",
+          "min_samples_leaf": 8,
+          "n_estimators": 288
+        }
+      },
+      {
+        "model": "lgbm",
+        "strategy": "bayesian, all training rows",
+        "cv_roc_auc": 0.8043245694621417,
+        "val_roc_auc": 0.8097647555842014,
+        "size_kb": 9011.5,
+        "params": {
+          "num_leaves": 136,
+          "learning_rate": 0.019948930432040424,
+          "n_estimators": 630,
+          "min_child_samples": 7,
+          "subsample": 0.8829843611389542,
+          "colsample_bytree": 0.5929159719177697,
+          "reg_lambda": 0.1407655368983871,
+          "subsample_freq": 1
+        }
+      }
+    ]
+  },
+  "diagnostics": {
+    "calibration": {
+      "method": "isotonic",
+      "used": false,
+      "brier_raw": 0.14778099429795374,
+      "brier_calibrated_out_of_fold": 0.1482621422055293,
+      "x": [],
+      "y": []
+    },
+    "threshold": 0.63,
+    "val_metrics": {
+      "roc_auc": 0.8097647555842014,
+      "pr_auc": 0.6419269930416209,
+      "brier": 0.14778099429795374,
+      "accuracy": 0.7678257546809324,
+      "precision": 0.8363201911589009,
+      "recall": 0.19439044709802833,
+      "f1": 0.31545741324921134,
+      "threshold": 0.63
+    },
+    "val_confusion": [
+      [
+        9347,
+        137
+      ],
+      [
+        2901,
+        700
+      ]
+    ],
+    "operating_points": [
+      {
+        "name": "cost-based (deployed)",
+        "threshold": 0.63,
+        "chosen_by": "lowest expected cost: missed cancellation = 1, false alarm = 2"
+      },
+      {
+        "name": "default 0.5",
+        "threshold": 0.5,
+        "chosen_by": "convention"
+      },
+      {
+        "name": "best F1",
+        "threshold": 0.29,
+        "chosen_by": "highest F1 on validation"
+      }
+    ],
+    "val_operating_metrics": [
+      {
+        "operating_point": "cost-based (deployed)",
+        "threshold": 0.63,
+        "flagged_share": 0.06396637371035536,
+        "accuracy": 0.7678257546809324,
+        "precision": 0.8363201911589009,
+        "recall": 0.19439044709802833,
+        "f1": 0.31545741324921134
+      },
+      {
+        "operating_point": "default 0.5",
+        "threshold": 0.5,
+        "flagged_share": 0.15124188001528469,
+        "accuracy": 0.7776079480320979,
+        "precision": 0.6745831227892876,
+        "recall": 0.37073035267981114,
+        "f1": 0.478494623655914
+      },
+      {
+        "operating_point": "best F1",
+        "threshold": 0.29,
+        "flagged_share": 0.40091708062667175,
+        "accuracy": 0.7339701948796332,
+        "precision": 0.511437285550896,
+        "recall": 0.7450708136628714,
+        "f1": 0.6065332881202667
+      }
+    ],
+    "val_cost_sensitivity": [
+      {
+        "false_alarm_cost": 0.2,
+        "threshold": 0.17,
+        "flagged_share": 0.5367214367596485,
+        "precision": 0.44069485974654704,
+        "recall": 0.8594834768119967,
+        "f1": 0.5826430722891566,
+        "cost_per_booking": 0.09870844478410393,
+        "cost_without_model": 0.14495987772258312,
+        "saving": 0.319063686208351
+      },
+      {
+        "false_alarm_cost": 0.5,
+        "threshold": 0.31,
+        "flagged_share": 0.3850974398165839,
+        "precision": 0.5193490771978567,
+        "recall": 0.7267425715079144,
+        "f1": 0.6057870370370371,
+        "cost_per_booking": 0.1677493312953764,
+        "cost_without_model": 0.27520061138708446,
+        "saving": 0.39044709802832545
+      },
+      {
+        "false_alarm_cost": 1.0,
+        "threshold": 0.5,
+        "flagged_share": 0.15124188001528469,
+        "precision": 0.6745831227892876,
+        "recall": 0.37073035267981114,
+        "f1": 0.478494623655914,
+        "cost_per_booking": 0.22239205196790218,
+        "cost_without_model": 0.27520061138708446,
+        "saving": 0.19189114134962515
+      },
+      {
+        "false_alarm_cost": 2.0,
+        "threshold": 0.63,
+        "flagged_share": 0.06396637371035536,
+        "precision": 0.8363201911589009,
+        "recall": 0.19439044709802833,
+        "f1": 0.31545741324921134,
+        "cost_per_booking": 0.2426442491402369,
+        "cost_without_model": 0.27520061138708446,
+        "saving": 0.11830047209108585
+      },
+      {
+        "false_alarm_cost": 3.0,
+        "threshold": 0.74,
+        "flagged_share": 0.03561329766908674,
+        "precision": 0.9291845493562232,
+        "recall": 0.12024437656206609,
+        "f1": 0.21293336611753136,
+        "cost_per_booking": 0.2496752006113871,
+        "cost_without_model": 0.27520061138708446,
+        "saving": 0.09275201332963068
+      }
+    ],
+    "val_gains": [
+      {
+        "risk_group": 1,
+        "bookings": 1309,
+        "cancel_rate": 0.7478991596638656,
+        "lift": 2.7176507926136297,
+        "cumulative_share_of_bookings": 0.1,
+        "cumulative_share_of_cancellations": 0.2718689252985282
+      },
+      {
+        "risk_group": 2,
+        "bookings": 1309,
+        "cancel_rate": 0.5080213903743316,
+        "lift": 1.846003858108339,
+        "cumulative_share_of_bookings": 0.2,
+        "cumulative_share_of_cancellations": 0.4565398500416551
+      },
+      {
+        "risk_group": 3,
+        "bookings": 1309,
+        "cancel_rate": 0.43391902215431627,
+        "lift": 1.5767371299331374,
+        "cumulative_share_of_bookings": 0.3,
+        "cumulative_share_of_cancellations": 0.6142738128297696
+      },
+      {
+        "risk_group": 4,
+        "bookings": 1309,
+        "cancel_rate": 0.3575248281130634,
+        "lift": 1.299142564804064,
+        "cumulative_share_of_bookings": 0.4,
+        "cumulative_share_of_cancellations": 0.744237711746737
+      },
+      {
+        "risk_group": 5,
+        "bookings": 1309,
+        "cancel_rate": 0.24675324675324675,
+        "lift": 0.8966304453669074,
+        "cumulative_share_of_bookings": 0.5,
+        "cumulative_share_of_cancellations": 0.8339350180505415
+      },
+      {
+        "risk_group": 6,
+        "bookings": 1308,
+        "cancel_rate": 0.172782874617737,
+        "lift": 0.6278433530611187,
+        "cumulative_share_of_bookings": 0.6,
+        "cumulative_share_of_cancellations": 0.8966953623993336
+      },
+      {
+        "risk_group": 7,
+        "bookings": 1308,
+        "cancel_rate": 0.11697247706422019,
+        "lift": 0.4250443938865096,
+        "cumulative_share_of_bookings": 0.7,
+        "cumulative_share_of_cancellations": 0.9391835601221883
+      },
+      {
+        "risk_group": 8,
+        "bookings": 1308,
+        "cancel_rate": 0.07951070336391437,
+        "lift": 0.28891906512547055,
+        "cumulative_share_of_bookings": 0.8,
+        "cumulative_share_of_cancellations": 0.968064426548181
+      },
+      {
+        "risk_group": 9,
+        "bookings": 1308,
+        "cancel_rate": 0.05733944954128441,
+        "lift": 0.20835509504240668,
+        "cumulative_share_of_bookings": 0.9,
+        "cumulative_share_of_cancellations": 0.9888919744515412
+      },
+      {
+        "risk_group": 10,
+        "bookings": 1308,
+        "cancel_rate": 0.03058103975535168,
+        "lift": 0.11112271735595022,
+        "cumulative_share_of_bookings": 1.0,
+        "cumulative_share_of_cancellations": 1.0
+      }
+    ],
+    "val_capacity": {
+      "weeks": 228,
+      "bookings_per_week_median": 53.0,
+      "total_actual": 3601.0,
+      "total_predicted": 3522.125622134558,
+      "bias": -0.021903465111203002,
+      "wape_model": 0.15193905474986832,
+      "wape_base_rate": 0.27755338796825896,
+      "correlation": 0.9507750422461134,
+      "by_week": [
+        {
+          "hotel": "City Hotel",
+          "week": "2015-06-29",
+          "bookings": 9,
+          "actual": 7.0,
+          "predicted": 6.077426618930334,
+          "base_rate_forecast": 2.4772183825215373
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-07-06",
+          "bookings": 14,
+          "actual": 10.0,
+          "predicted": 9.161521725946734,
+          "base_rate_forecast": 3.8534508172557245
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-07-13",
+          "bookings": 11,
+          "actual": 8.0,
+          "predicted": 6.528878799507889,
+          "base_rate_forecast": 3.027711356415212
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-07-20",
+          "bookings": 17,
+          "actual": 11.0,
+          "predicted": 9.316030182737395,
+          "base_rate_forecast": 4.679190278096237
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-07-27",
+          "bookings": 7,
+          "actual": 3.0,
+          "predicted": 2.61587252576153,
+          "base_rate_forecast": 1.9267254086278622
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-08-03",
+          "bookings": 36,
+          "actual": 8.0,
+          "predicted": 8.457413013249587,
+          "base_rate_forecast": 9.908873530086149
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-08-10",
+          "bookings": 52,
+          "actual": 9.0,
+          "predicted": 7.817405205452063,
+          "base_rate_forecast": 14.312817321235547
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-08-17",
+          "bookings": 38,
+          "actual": 11.0,
+          "predicted": 9.60747219943317,
+          "base_rate_forecast": 10.459366503979822
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-08-24",
+          "bookings": 31,
+          "actual": 6.0,
+          "predicted": 4.8626173249105165,
+          "base_rate_forecast": 8.532641095351961
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-08-31",
+          "bookings": 59,
+          "actual": 5.0,
+          "predicted": 10.293614645800307,
+          "base_rate_forecast": 16.23954272986341
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-09-07",
+          "bookings": 56,
+          "actual": 16.0,
+          "predicted": 11.55628508680917,
+          "base_rate_forecast": 15.413803269022898
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-09-14",
+          "bookings": 65,
+          "actual": 13.0,
+          "predicted": 14.99360159014261,
+          "base_rate_forecast": 17.891021651544435
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-09-21",
+          "bookings": 65,
+          "actual": 13.0,
+          "predicted": 12.579001210687913,
+          "base_rate_forecast": 17.891021651544435
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-09-28",
+          "bookings": 69,
+          "actual": 12.0,
+          "predicted": 14.450840526690335,
+          "base_rate_forecast": 18.992007599331785
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-10-05",
+          "bookings": 55,
+          "actual": 12.0,
+          "predicted": 10.061272251034536,
+          "base_rate_forecast": 15.13855678207606
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-10-12",
+          "bookings": 58,
+          "actual": 14.0,
+          "predicted": 17.136434802735906,
+          "base_rate_forecast": 15.964296242916573
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-10-19",
+          "bookings": 59,
+          "actual": 10.0,
+          "predicted": 11.150386435067789,
+          "base_rate_forecast": 16.23954272986341
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-10-26",
+          "bookings": 39,
+          "actual": 6.0,
+          "predicted": 7.761218802510926,
+          "base_rate_forecast": 10.73461299092666
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-11-02",
+          "bookings": 30,
+          "actual": 7.0,
+          "predicted": 7.629453626087552,
+          "base_rate_forecast": 8.257394608405123
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-11-09",
+          "bookings": 21,
+          "actual": 4.0,
+          "predicted": 5.438005922709521,
+          "base_rate_forecast": 5.7801762258835865
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-11-16",
+          "bookings": 32,
+          "actual": 3.0,
+          "predicted": 4.95584758893421,
+          "base_rate_forecast": 8.807887582298799
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-11-23",
+          "bookings": 35,
+          "actual": 9.0,
+          "predicted": 5.229565320752501,
+          "base_rate_forecast": 9.633627043139311
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-11-30",
+          "bookings": 40,
+          "actual": 8.0,
+          "predicted": 9.83839672941596,
+          "base_rate_forecast": 11.009859477873498
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-12-07",
+          "bookings": 23,
+          "actual": 9.0,
+          "predicted": 5.8774748698322865,
+          "base_rate_forecast": 6.330669199777262
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-12-14",
+          "bookings": 19,
+          "actual": 3.0,
+          "predicted": 3.1450473909845567,
+          "base_rate_forecast": 5.229683251989911
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-12-21",
+          "bookings": 41,
+          "actual": 4.0,
+          "predicted": 8.958238608287372,
+          "base_rate_forecast": 11.285105964820335
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2015-12-28",
+          "bookings": 60,
+          "actual": 11.0,
+          "predicted": 14.425243878780357,
+          "base_rate_forecast": 16.514789216810247
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-01-04",
+          "bookings": 36,
+          "actual": 5.0,
+          "predicted": 5.855241958992376,
+          "base_rate_forecast": 9.908873530086149
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-01-11",
+          "bookings": 29,
+          "actual": 9.0,
+          "predicted": 8.167610956995372,
+          "base_rate_forecast": 7.982148121458287
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-01-18",
+          "bookings": 48,
+          "actual": 9.0,
+          "predicted": 10.54133760248653,
+          "base_rate_forecast": 13.211831373448199
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-01-25",
+          "bookings": 37,
+          "actual": 8.0,
+          "predicted": 8.47162517827021,
+          "base_rate_forecast": 10.184120017032987
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-02-01",
+          "bookings": 46,
+          "actual": 10.0,
+          "predicted": 10.376146124060911,
+          "base_rate_forecast": 12.661338399554523
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-02-08",
+          "bookings": 65,
+          "actual": 13.0,
+          "predicted": 13.5947763047854,
+          "base_rate_forecast": 17.891021651544435
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-02-15",
+          "bookings": 63,
+          "actual": 9.0,
+          "predicted": 13.063879035382028,
+          "base_rate_forecast": 17.34052867765076
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-02-22",
+          "bookings": 75,
+          "actual": 18.0,
+          "predicted": 17.125658201533646,
+          "base_rate_forecast": 20.643486521012807
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-02-29",
+          "bookings": 69,
+          "actual": 12.0,
+          "predicted": 14.25721714370284,
+          "base_rate_forecast": 18.992007599331785
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-03-07",
+          "bookings": 81,
+          "actual": 21.0,
+          "predicted": 18.804986825441457,
+          "base_rate_forecast": 22.294965442693833
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-03-14",
+          "bookings": 67,
+          "actual": 18.0,
+          "predicted": 19.88624933152852,
+          "base_rate_forecast": 18.44151462543811
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-03-21",
+          "bookings": 84,
+          "actual": 22.0,
+          "predicted": 18.33828838737133,
+          "base_rate_forecast": 23.120704903534346
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-03-28",
+          "bookings": 83,
+          "actual": 27.0,
+          "predicted": 21.34884117416743,
+          "base_rate_forecast": 22.84545841658751
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-04-04",
+          "bookings": 89,
+          "actual": 28.0,
+          "predicted": 22.444437398392527,
+          "base_rate_forecast": 24.496937338268534
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-04-11",
+          "bookings": 86,
+          "actual": 20.0,
+          "predicted": 24.456746379645978,
+          "base_rate_forecast": 23.67119787742802
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-04-18",
+          "bookings": 80,
+          "actual": 17.0,
+          "predicted": 21.456679852932805,
+          "base_rate_forecast": 22.019718955746995
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-04-25",
+          "bookings": 77,
+          "actual": 18.0,
+          "predicted": 21.61138267598092,
+          "base_rate_forecast": 21.193979494906483
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-05-02",
+          "bookings": 60,
+          "actual": 23.0,
+          "predicted": 18.905560003839906,
+          "base_rate_forecast": 16.514789216810247
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-05-09",
+          "bookings": 98,
+          "actual": 21.0,
+          "predicted": 24.896118179931015,
+          "base_rate_forecast": 26.97415572079007
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-05-16",
+          "bookings": 105,
+          "actual": 24.0,
+          "predicted": 26.982269536631744,
+          "base_rate_forecast": 28.900881129417932
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-05-23",
+          "bookings": 64,
+          "actual": 11.0,
+          "predicted": 13.546990261351434,
+          "base_rate_forecast": 17.615775164597597
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-05-30",
+          "bookings": 72,
+          "actual": 21.0,
+          "predicted": 20.114362653437773,
+          "base_rate_forecast": 19.817747060172298
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-06-06",
+          "bookings": 74,
+          "actual": 20.0,
+          "predicted": 18.329572256075657,
+          "base_rate_forecast": 20.368240034065973
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-06-13",
+          "bookings": 81,
+          "actual": 27.0,
+          "predicted": 22.260891298844676,
+          "base_rate_forecast": 22.294965442693833
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-06-20",
+          "bookings": 85,
+          "actual": 17.0,
+          "predicted": 20.533235751825178,
+          "base_rate_forecast": 23.395951390481184
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-06-27",
+          "bookings": 84,
+          "actual": 23.0,
+          "predicted": 29.648676078497765,
+          "base_rate_forecast": 23.120704903534346
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-07-04",
+          "bookings": 99,
+          "actual": 29.0,
+          "predicted": 30.082208264488308,
+          "base_rate_forecast": 27.249402207736907
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-07-11",
+          "bookings": 95,
+          "actual": 18.0,
+          "predicted": 26.008081201289883,
+          "base_rate_forecast": 26.14841625994956
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-07-18",
+          "bookings": 78,
+          "actual": 13.0,
+          "predicted": 20.87815755808161,
+          "base_rate_forecast": 21.46922598185332
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-07-25",
+          "bookings": 76,
+          "actual": 19.0,
+          "predicted": 22.219930946755408,
+          "base_rate_forecast": 20.918733007959645
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-08-01",
+          "bookings": 86,
+          "actual": 30.0,
+          "predicted": 25.207401755739124,
+          "base_rate_forecast": 23.67119787742802
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-08-08",
+          "bookings": 99,
+          "actual": 30.0,
+          "predicted": 34.62418991991541,
+          "base_rate_forecast": 27.249402207736907
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-08-15",
+          "bookings": 107,
+          "actual": 31.0,
+          "predicted": 31.510884220839763,
+          "base_rate_forecast": 29.451374103311608
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-08-22",
+          "bookings": 92,
+          "actual": 35.0,
+          "predicted": 34.817770866707065,
+          "base_rate_forecast": 25.322676799109047
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-08-29",
+          "bookings": 104,
+          "actual": 36.0,
+          "predicted": 35.07337906571901,
+          "base_rate_forecast": 28.625634642471095
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-09-05",
+          "bookings": 82,
+          "actual": 18.0,
+          "predicted": 23.144227169968747,
+          "base_rate_forecast": 22.57021192964067
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-09-12",
+          "bookings": 92,
+          "actual": 22.0,
+          "predicted": 21.510795369518938,
+          "base_rate_forecast": 25.322676799109047
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-09-19",
+          "bookings": 77,
+          "actual": 20.0,
+          "predicted": 19.479634698103872,
+          "base_rate_forecast": 21.193979494906483
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-09-26",
+          "bookings": 87,
+          "actual": 36.0,
+          "predicted": 24.392234213762283,
+          "base_rate_forecast": 23.94644436437486
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-10-03",
+          "bookings": 93,
+          "actual": 29.0,
+          "predicted": 29.031732276723986,
+          "base_rate_forecast": 25.597923286055885
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-10-10",
+          "bookings": 95,
+          "actual": 27.0,
+          "predicted": 26.216837748407603,
+          "base_rate_forecast": 26.14841625994956
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-10-17",
+          "bookings": 83,
+          "actual": 34.0,
+          "predicted": 30.530823037213043,
+          "base_rate_forecast": 22.84545841658751
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-10-24",
+          "bookings": 105,
+          "actual": 34.0,
+          "predicted": 31.94301329006227,
+          "base_rate_forecast": 28.900881129417932
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-10-31",
+          "bookings": 76,
+          "actual": 22.0,
+          "predicted": 19.857775899865363,
+          "base_rate_forecast": 20.918733007959645
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-11-07",
+          "bookings": 86,
+          "actual": 20.0,
+          "predicted": 18.469307167471705,
+          "base_rate_forecast": 23.67119787742802
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-11-14",
+          "bookings": 74,
+          "actual": 22.0,
+          "predicted": 21.12820472111053,
+          "base_rate_forecast": 20.368240034065973
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-11-21",
+          "bookings": 72,
+          "actual": 13.0,
+          "predicted": 16.4640443387158,
+          "base_rate_forecast": 19.817747060172298
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-11-28",
+          "bookings": 83,
+          "actual": 28.0,
+          "predicted": 29.94990011707341,
+          "base_rate_forecast": 22.84545841658751
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-12-05",
+          "bookings": 60,
+          "actual": 24.0,
+          "predicted": 20.223508967367177,
+          "base_rate_forecast": 16.514789216810247
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-12-12",
+          "bookings": 55,
+          "actual": 17.0,
+          "predicted": 18.484747861736505,
+          "base_rate_forecast": 15.13855678207606
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-12-19",
+          "bookings": 51,
+          "actual": 16.0,
+          "predicted": 19.71052767029644,
+          "base_rate_forecast": 14.03757083428871
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2016-12-26",
+          "bookings": 80,
+          "actual": 27.0,
+          "predicted": 30.90652439098336,
+          "base_rate_forecast": 22.019718955746995
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-01-02",
+          "bookings": 74,
+          "actual": 31.0,
+          "predicted": 30.369303603712773,
+          "base_rate_forecast": 20.368240034065973
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-01-09",
+          "bookings": 56,
+          "actual": 15.0,
+          "predicted": 15.543931077682002,
+          "base_rate_forecast": 15.413803269022898
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-01-16",
+          "bookings": 52,
+          "actual": 13.0,
+          "predicted": 13.779815752751706,
+          "base_rate_forecast": 14.312817321235547
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-01-23",
+          "bookings": 47,
+          "actual": 12.0,
+          "predicted": 13.373840665289693,
+          "base_rate_forecast": 12.936584886501361
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-01-30",
+          "bookings": 55,
+          "actual": 21.0,
+          "predicted": 14.948587168286135,
+          "base_rate_forecast": 15.13855678207606
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-02-06",
+          "bookings": 70,
+          "actual": 20.0,
+          "predicted": 18.363444210797148,
+          "base_rate_forecast": 19.267254086278623
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-02-13",
+          "bookings": 74,
+          "actual": 23.0,
+          "predicted": 23.290048693389746,
+          "base_rate_forecast": 20.368240034065973
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-02-20",
+          "bookings": 88,
+          "actual": 31.0,
+          "predicted": 26.243427075407123,
+          "base_rate_forecast": 24.221690851321696
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-02-27",
+          "bookings": 77,
+          "actual": 28.0,
+          "predicted": 25.998401425870597,
+          "base_rate_forecast": 21.193979494906483
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-03-06",
+          "bookings": 66,
+          "actual": 27.0,
+          "predicted": 19.8302760037984,
+          "base_rate_forecast": 18.166268138491272
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-03-13",
+          "bookings": 86,
+          "actual": 28.0,
+          "predicted": 24.24672573885041,
+          "base_rate_forecast": 23.67119787742802
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-03-20",
+          "bookings": 84,
+          "actual": 24.0,
+          "predicted": 24.238052689348162,
+          "base_rate_forecast": 23.120704903534346
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-03-27",
+          "bookings": 78,
+          "actual": 24.0,
+          "predicted": 24.504902091023975,
+          "base_rate_forecast": 21.46922598185332
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-04-03",
+          "bookings": 99,
+          "actual": 33.0,
+          "predicted": 37.339480046836314,
+          "base_rate_forecast": 27.249402207736907
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-04-10",
+          "bookings": 98,
+          "actual": 39.0,
+          "predicted": 36.13473199812316,
+          "base_rate_forecast": 26.97415572079007
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-04-17",
+          "bookings": 83,
+          "actual": 25.0,
+          "predicted": 33.543356224607074,
+          "base_rate_forecast": 22.84545841658751
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-04-24",
+          "bookings": 86,
+          "actual": 33.0,
+          "predicted": 35.51331051425066,
+          "base_rate_forecast": 23.67119787742802
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-05-01",
+          "bookings": 101,
+          "actual": 39.0,
+          "predicted": 36.15131439468203,
+          "base_rate_forecast": 27.799895181630582
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-05-08",
+          "bookings": 107,
+          "actual": 39.0,
+          "predicted": 34.16849544834932,
+          "base_rate_forecast": 29.451374103311608
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-05-15",
+          "bookings": 117,
+          "actual": 40.0,
+          "predicted": 42.948235597558046,
+          "base_rate_forecast": 32.203838972779984
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-05-22",
+          "bookings": 111,
+          "actual": 40.0,
+          "predicted": 40.67696311146385,
+          "base_rate_forecast": 30.552360051098958
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-05-29",
+          "bookings": 88,
+          "actual": 30.0,
+          "predicted": 26.9584315303248,
+          "base_rate_forecast": 24.221690851321696
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-06-05",
+          "bookings": 90,
+          "actual": 33.0,
+          "predicted": 29.50619852399121,
+          "base_rate_forecast": 24.77218382521537
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-06-12",
+          "bookings": 90,
+          "actual": 30.0,
+          "predicted": 30.350532670282888,
+          "base_rate_forecast": 24.77218382521537
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-06-19",
+          "bookings": 90,
+          "actual": 30.0,
+          "predicted": 29.911541415336337,
+          "base_rate_forecast": 24.77218382521537
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-06-26",
+          "bookings": 107,
+          "actual": 36.0,
+          "predicted": 38.79660812228865,
+          "base_rate_forecast": 29.451374103311608
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-07-03",
+          "bookings": 104,
+          "actual": 35.0,
+          "predicted": 34.803902918088944,
+          "base_rate_forecast": 28.625634642471095
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-07-10",
+          "bookings": 106,
+          "actual": 33.0,
+          "predicted": 35.180397953779476,
+          "base_rate_forecast": 29.17612761636477
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-07-17",
+          "bookings": 75,
+          "actual": 30.0,
+          "predicted": 26.622622085568878,
+          "base_rate_forecast": 20.643486521012807
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-07-24",
+          "bookings": 90,
+          "actual": 36.0,
+          "predicted": 31.074902185661397,
+          "base_rate_forecast": 24.77218382521537
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-07-31",
+          "bookings": 107,
+          "actual": 42.0,
+          "predicted": 38.32648399380091,
+          "base_rate_forecast": 29.451374103311608
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-08-07",
+          "bookings": 85,
+          "actual": 32.0,
+          "predicted": 27.374217115297213,
+          "base_rate_forecast": 23.395951390481184
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-08-14",
+          "bookings": 93,
+          "actual": 34.0,
+          "predicted": 33.29302349024998,
+          "base_rate_forecast": 25.597923286055885
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-08-21",
+          "bookings": 79,
+          "actual": 26.0,
+          "predicted": 28.10823633254924,
+          "base_rate_forecast": 21.744472468800158
+        },
+        {
+          "hotel": "City Hotel",
+          "week": "2017-08-28",
+          "bookings": 43,
+          "actual": 19.0,
+          "predicted": 14.223288555917193,
+          "base_rate_forecast": 11.83559893871401
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-06-29",
+          "bookings": 29,
+          "actual": 7.0,
+          "predicted": 7.104620642836007,
+          "base_rate_forecast": 7.982148121458287
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-07-06",
+          "bookings": 36,
+          "actual": 8.0,
+          "predicted": 9.169519056682391,
+          "base_rate_forecast": 9.908873530086149
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-07-13",
+          "bookings": 35,
+          "actual": 8.0,
+          "predicted": 7.960236853391314,
+          "base_rate_forecast": 9.633627043139311
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-07-20",
+          "bookings": 54,
+          "actual": 17.0,
+          "predicted": 15.833305616270026,
+          "base_rate_forecast": 14.863310295129223
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-07-27",
+          "bookings": 52,
+          "actual": 16.0,
+          "predicted": 17.488174222637277,
+          "base_rate_forecast": 14.312817321235547
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-08-03",
+          "bookings": 47,
+          "actual": 9.0,
+          "predicted": 14.263451974102603,
+          "base_rate_forecast": 12.936584886501361
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-08-10",
+          "bookings": 47,
+          "actual": 14.0,
+          "predicted": 12.052260732062189,
+          "base_rate_forecast": 12.936584886501361
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-08-17",
+          "bookings": 32,
+          "actual": 11.0,
+          "predicted": 11.024094900106158,
+          "base_rate_forecast": 8.807887582298799
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-08-24",
+          "bookings": 41,
+          "actual": 9.0,
+          "predicted": 10.433981102012622,
+          "base_rate_forecast": 11.285105964820335
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-08-31",
+          "bookings": 40,
+          "actual": 13.0,
+          "predicted": 10.479496865998442,
+          "base_rate_forecast": 11.009859477873498
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-09-07",
+          "bookings": 40,
+          "actual": 7.0,
+          "predicted": 8.83938905395745,
+          "base_rate_forecast": 11.009859477873498
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-09-14",
+          "bookings": 34,
+          "actual": 6.0,
+          "predicted": 7.47440293171349,
+          "base_rate_forecast": 9.358380556192474
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-09-21",
+          "bookings": 37,
+          "actual": 4.0,
+          "predicted": 9.365035894519448,
+          "base_rate_forecast": 10.184120017032987
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-09-28",
+          "bookings": 47,
+          "actual": 8.0,
+          "predicted": 9.994879549926399,
+          "base_rate_forecast": 12.936584886501361
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-10-05",
+          "bookings": 40,
+          "actual": 6.0,
+          "predicted": 4.545009529709589,
+          "base_rate_forecast": 11.009859477873498
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-10-12",
+          "bookings": 49,
+          "actual": 4.0,
+          "predicted": 6.93090779056736,
+          "base_rate_forecast": 13.487077860395035
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-10-19",
+          "bookings": 38,
+          "actual": 7.0,
+          "predicted": 6.60219305042258,
+          "base_rate_forecast": 10.459366503979822
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-10-26",
+          "bookings": 32,
+          "actual": 6.0,
+          "predicted": 4.637395297710923,
+          "base_rate_forecast": 8.807887582298799
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-11-02",
+          "bookings": 32,
+          "actual": 4.0,
+          "predicted": 4.071665379167789,
+          "base_rate_forecast": 8.807887582298799
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-11-09",
+          "bookings": 17,
+          "actual": 6.0,
+          "predicted": 3.800125504598441,
+          "base_rate_forecast": 4.679190278096237
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-11-16",
+          "bookings": 36,
+          "actual": 3.0,
+          "predicted": 3.566577814310666,
+          "base_rate_forecast": 9.908873530086149
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-11-23",
+          "bookings": 35,
+          "actual": 3.0,
+          "predicted": 4.027548426215324,
+          "base_rate_forecast": 9.633627043139311
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-11-30",
+          "bookings": 27,
+          "actual": 4.0,
+          "predicted": 2.8598632628080667,
+          "base_rate_forecast": 7.431655147564611
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-12-07",
+          "bookings": 17,
+          "actual": 1.0,
+          "predicted": 2.063374874046201,
+          "base_rate_forecast": 4.679190278096237
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-12-14",
+          "bookings": 24,
+          "actual": 2.0,
+          "predicted": 3.2921407560907805,
+          "base_rate_forecast": 6.605915686724099
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-12-21",
+          "bookings": 28,
+          "actual": 8.0,
+          "predicted": 5.724228831120362,
+          "base_rate_forecast": 7.706901634511449
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2015-12-28",
+          "bookings": 37,
+          "actual": 4.0,
+          "predicted": 8.342449458479104,
+          "base_rate_forecast": 10.184120017032987
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-01-04",
+          "bookings": 26,
+          "actual": 3.0,
+          "predicted": 1.7517849178826952,
+          "base_rate_forecast": 7.156408660617774
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-01-11",
+          "bookings": 30,
+          "actual": 2.0,
+          "predicted": 2.7395554080597058,
+          "base_rate_forecast": 8.257394608405123
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-01-18",
+          "bookings": 16,
+          "actual": 1.0,
+          "predicted": 1.6013035410306364,
+          "base_rate_forecast": 4.403943791149399
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-01-25",
+          "bookings": 33,
+          "actual": 5.0,
+          "predicted": 3.295319261752461,
+          "base_rate_forecast": 9.083134069245636
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-02-01",
+          "bookings": 44,
+          "actual": 7.0,
+          "predicted": 5.581601830330149,
+          "base_rate_forecast": 12.110845425660848
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-02-08",
+          "bookings": 45,
+          "actual": 9.0,
+          "predicted": 8.409071371742723,
+          "base_rate_forecast": 12.386091912607686
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-02-15",
+          "bookings": 20,
+          "actual": 2.0,
+          "predicted": 3.513744139730326,
+          "base_rate_forecast": 5.504929738936749
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-02-22",
+          "bookings": 42,
+          "actual": 7.0,
+          "predicted": 8.226874440154901,
+          "base_rate_forecast": 11.560352451767173
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-02-29",
+          "bookings": 24,
+          "actual": 1.0,
+          "predicted": 2.5623921728852403,
+          "base_rate_forecast": 6.605915686724099
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-03-07",
+          "bookings": 36,
+          "actual": 2.0,
+          "predicted": 5.753328629690258,
+          "base_rate_forecast": 9.908873530086149
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-03-14",
+          "bookings": 59,
+          "actual": 10.0,
+          "predicted": 9.877760965546418,
+          "base_rate_forecast": 16.23954272986341
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-03-21",
+          "bookings": 53,
+          "actual": 13.0,
+          "predicted": 12.0375418660944,
+          "base_rate_forecast": 14.588063808182385
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-03-28",
+          "bookings": 43,
+          "actual": 5.0,
+          "predicted": 5.064573384869838,
+          "base_rate_forecast": 11.83559893871401
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-04-04",
+          "bookings": 45,
+          "actual": 7.0,
+          "predicted": 8.20647998596764,
+          "base_rate_forecast": 12.386091912607686
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-04-11",
+          "bookings": 43,
+          "actual": 6.0,
+          "predicted": 9.262681448208935,
+          "base_rate_forecast": 11.83559893871401
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-04-18",
+          "bookings": 48,
+          "actual": 10.0,
+          "predicted": 8.889264667706362,
+          "base_rate_forecast": 13.211831373448199
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-04-25",
+          "bookings": 56,
+          "actual": 13.0,
+          "predicted": 11.836915171519374,
+          "base_rate_forecast": 15.413803269022898
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-05-02",
+          "bookings": 61,
+          "actual": 15.0,
+          "predicted": 11.954321469390427,
+          "base_rate_forecast": 16.790035703757084
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-05-09",
+          "bookings": 50,
+          "actual": 8.0,
+          "predicted": 8.311717805875862,
+          "base_rate_forecast": 13.762324347341872
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-05-16",
+          "bookings": 58,
+          "actual": 10.0,
+          "predicted": 12.559047421751549,
+          "base_rate_forecast": 15.964296242916573
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-05-23",
+          "bookings": 41,
+          "actual": 13.0,
+          "predicted": 6.7397752492773915,
+          "base_rate_forecast": 11.285105964820335
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-05-30",
+          "bookings": 64,
+          "actual": 15.0,
+          "predicted": 16.10932705005904,
+          "base_rate_forecast": 17.615775164597597
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-06-06",
+          "bookings": 49,
+          "actual": 11.0,
+          "predicted": 14.191136367997945,
+          "base_rate_forecast": 13.487077860395035
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-06-13",
+          "bookings": 37,
+          "actual": 10.0,
+          "predicted": 10.453682264536946,
+          "base_rate_forecast": 10.184120017032987
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-06-20",
+          "bookings": 43,
+          "actual": 12.0,
+          "predicted": 10.50015146960404,
+          "base_rate_forecast": 11.83559893871401
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-06-27",
+          "bookings": 45,
+          "actual": 15.0,
+          "predicted": 11.404101001744209,
+          "base_rate_forecast": 12.386091912607686
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-07-04",
+          "bookings": 42,
+          "actual": 8.0,
+          "predicted": 9.555846494319576,
+          "base_rate_forecast": 11.560352451767173
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-07-11",
+          "bookings": 47,
+          "actual": 17.0,
+          "predicted": 14.978419142178723,
+          "base_rate_forecast": 12.936584886501361
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-07-18",
+          "bookings": 50,
+          "actual": 17.0,
+          "predicted": 16.62976960403192,
+          "base_rate_forecast": 13.762324347341872
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-07-25",
+          "bookings": 54,
+          "actual": 13.0,
+          "predicted": 14.584007184424651,
+          "base_rate_forecast": 14.863310295129223
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-08-01",
+          "bookings": 51,
+          "actual": 13.0,
+          "predicted": 17.402090919926863,
+          "base_rate_forecast": 14.03757083428871
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-08-08",
+          "bookings": 58,
+          "actual": 30.0,
+          "predicted": 23.691852772608765,
+          "base_rate_forecast": 15.964296242916573
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-08-15",
+          "bookings": 69,
+          "actual": 25.0,
+          "predicted": 22.401804785151217,
+          "base_rate_forecast": 18.992007599331785
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-08-22",
+          "bookings": 40,
+          "actual": 9.0,
+          "predicted": 11.580644607940505,
+          "base_rate_forecast": 11.009859477873498
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-08-29",
+          "bookings": 53,
+          "actual": 11.0,
+          "predicted": 11.561756377752326,
+          "base_rate_forecast": 14.588063808182385
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-09-05",
+          "bookings": 54,
+          "actual": 18.0,
+          "predicted": 14.768743507519654,
+          "base_rate_forecast": 14.863310295129223
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-09-12",
+          "bookings": 40,
+          "actual": 11.0,
+          "predicted": 9.371887044162024,
+          "base_rate_forecast": 11.009859477873498
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-09-19",
+          "bookings": 48,
+          "actual": 14.0,
+          "predicted": 12.650910809983394,
+          "base_rate_forecast": 13.211831373448199
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-09-26",
+          "bookings": 34,
+          "actual": 8.0,
+          "predicted": 6.6512455764000356,
+          "base_rate_forecast": 9.358380556192474
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-10-03",
+          "bookings": 49,
+          "actual": 8.0,
+          "predicted": 7.337335069592358,
+          "base_rate_forecast": 13.487077860395035
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-10-10",
+          "bookings": 53,
+          "actual": 10.0,
+          "predicted": 6.636978771958474,
+          "base_rate_forecast": 14.588063808182385
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-10-17",
+          "bookings": 49,
+          "actual": 17.0,
+          "predicted": 13.960806127346565,
+          "base_rate_forecast": 13.487077860395035
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-10-24",
+          "bookings": 65,
+          "actual": 15.0,
+          "predicted": 9.538471683990608,
+          "base_rate_forecast": 17.891021651544435
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-10-31",
+          "bookings": 46,
+          "actual": 7.0,
+          "predicted": 7.037399598596609,
+          "base_rate_forecast": 12.661338399554523
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-11-07",
+          "bookings": 54,
+          "actual": 9.0,
+          "predicted": 8.29826384407792,
+          "base_rate_forecast": 14.863310295129223
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-11-14",
+          "bookings": 43,
+          "actual": 9.0,
+          "predicted": 4.771435561670347,
+          "base_rate_forecast": 11.83559893871401
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-11-21",
+          "bookings": 34,
+          "actual": 8.0,
+          "predicted": 5.8309083074237416,
+          "base_rate_forecast": 9.358380556192474
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-11-28",
+          "bookings": 30,
+          "actual": 6.0,
+          "predicted": 5.225005073734156,
+          "base_rate_forecast": 8.257394608405123
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-12-05",
+          "bookings": 32,
+          "actual": 11.0,
+          "predicted": 5.543106254050632,
+          "base_rate_forecast": 8.807887582298799
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-12-12",
+          "bookings": 37,
+          "actual": 5.0,
+          "predicted": 4.52814845315896,
+          "base_rate_forecast": 10.184120017032987
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-12-19",
+          "bookings": 48,
+          "actual": 13.0,
+          "predicted": 9.358130188941088,
+          "base_rate_forecast": 13.211831373448199
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2016-12-26",
+          "bookings": 39,
+          "actual": 11.0,
+          "predicted": 10.974057130639157,
+          "base_rate_forecast": 10.73461299092666
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-01-02",
+          "bookings": 41,
+          "actual": 6.0,
+          "predicted": 6.467736342161471,
+          "base_rate_forecast": 11.285105964820335
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-01-09",
+          "bookings": 27,
+          "actual": 5.0,
+          "predicted": 5.953323032413608,
+          "base_rate_forecast": 7.431655147564611
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-01-16",
+          "bookings": 47,
+          "actual": 5.0,
+          "predicted": 8.35250448380378,
+          "base_rate_forecast": 12.936584886501361
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-01-23",
+          "bookings": 38,
+          "actual": 4.0,
+          "predicted": 4.402987060206864,
+          "base_rate_forecast": 10.459366503979822
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-01-30",
+          "bookings": 48,
+          "actual": 9.0,
+          "predicted": 6.262518543247385,
+          "base_rate_forecast": 13.211831373448199
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-02-06",
+          "bookings": 54,
+          "actual": 6.0,
+          "predicted": 5.769296620787871,
+          "base_rate_forecast": 14.863310295129223
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-02-13",
+          "bookings": 63,
+          "actual": 14.0,
+          "predicted": 11.203250272078186,
+          "base_rate_forecast": 17.34052867765076
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-02-20",
+          "bookings": 62,
+          "actual": 14.0,
+          "predicted": 12.442205325821114,
+          "base_rate_forecast": 17.065282190703922
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-02-27",
+          "bookings": 37,
+          "actual": 9.0,
+          "predicted": 6.875078021151843,
+          "base_rate_forecast": 10.184120017032987
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-03-06",
+          "bookings": 56,
+          "actual": 11.0,
+          "predicted": 8.016023485676794,
+          "base_rate_forecast": 15.413803269022898
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-03-13",
+          "bookings": 36,
+          "actual": 15.0,
+          "predicted": 6.58289034727581,
+          "base_rate_forecast": 9.908873530086149
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-03-20",
+          "bookings": 26,
+          "actual": 4.0,
+          "predicted": 5.0756229649181615,
+          "base_rate_forecast": 7.156408660617774
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-03-27",
+          "bookings": 51,
+          "actual": 13.0,
+          "predicted": 11.839087251617652,
+          "base_rate_forecast": 14.03757083428871
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-04-03",
+          "bookings": 53,
+          "actual": 9.0,
+          "predicted": 10.640240688712915,
+          "base_rate_forecast": 14.588063808182385
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-04-10",
+          "bookings": 57,
+          "actual": 21.0,
+          "predicted": 20.058440337873087,
+          "base_rate_forecast": 15.689049755969736
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-04-17",
+          "bookings": 46,
+          "actual": 5.0,
+          "predicted": 7.824242483329066,
+          "base_rate_forecast": 12.661338399554523
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-04-24",
+          "bookings": 57,
+          "actual": 13.0,
+          "predicted": 15.276655051945463,
+          "base_rate_forecast": 15.689049755969736
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-05-01",
+          "bookings": 45,
+          "actual": 16.0,
+          "predicted": 11.950256924008137,
+          "base_rate_forecast": 12.386091912607686
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-05-08",
+          "bookings": 46,
+          "actual": 13.0,
+          "predicted": 8.912896796262215,
+          "base_rate_forecast": 12.661338399554523
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-05-15",
+          "bookings": 60,
+          "actual": 17.0,
+          "predicted": 14.132864065453731,
+          "base_rate_forecast": 16.514789216810247
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-05-22",
+          "bookings": 64,
+          "actual": 23.0,
+          "predicted": 15.220728993565189,
+          "base_rate_forecast": 17.615775164597597
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-05-29",
+          "bookings": 64,
+          "actual": 20.0,
+          "predicted": 16.676045106107846,
+          "base_rate_forecast": 17.615775164597597
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-06-05",
+          "bookings": 51,
+          "actual": 15.0,
+          "predicted": 11.849474690518022,
+          "base_rate_forecast": 14.03757083428871
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-06-12",
+          "bookings": 43,
+          "actual": 18.0,
+          "predicted": 14.4012698842274,
+          "base_rate_forecast": 11.83559893871401
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-06-19",
+          "bookings": 52,
+          "actual": 14.0,
+          "predicted": 16.489862283256763,
+          "base_rate_forecast": 14.312817321235547
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-06-26",
+          "bookings": 59,
+          "actual": 26.0,
+          "predicted": 19.506052514601773,
+          "base_rate_forecast": 16.23954272986341
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-07-03",
+          "bookings": 40,
+          "actual": 13.0,
+          "predicted": 14.117565023630707,
+          "base_rate_forecast": 11.009859477873498
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-07-10",
+          "bookings": 63,
+          "actual": 20.0,
+          "predicted": 21.030366363955753,
+          "base_rate_forecast": 17.34052867765076
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-07-17",
+          "bookings": 37,
+          "actual": 15.0,
+          "predicted": 14.627792379428739,
+          "base_rate_forecast": 10.184120017032987
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-07-24",
+          "bookings": 47,
+          "actual": 17.0,
+          "predicted": 14.573910602866238,
+          "base_rate_forecast": 12.936584886501361
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-07-31",
+          "bookings": 81,
+          "actual": 38.0,
+          "predicted": 29.481707717042294,
+          "base_rate_forecast": 22.294965442693833
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-08-07",
+          "bookings": 46,
+          "actual": 15.0,
+          "predicted": 17.75298785755905,
+          "base_rate_forecast": 12.661338399554523
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-08-14",
+          "bookings": 64,
+          "actual": 27.0,
+          "predicted": 26.49240600134364,
+          "base_rate_forecast": 17.615775164597597
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-08-21",
+          "bookings": 61,
+          "actual": 26.0,
+          "predicted": 22.67121539143332,
+          "base_rate_forecast": 16.790035703757084
+        },
+        {
+          "hotel": "Resort Hotel",
+          "week": "2017-08-28",
+          "bookings": 28,
+          "actual": 11.0,
+          "predicted": 9.001089061392666,
+          "base_rate_forecast": 7.706901634511449
+        }
+      ]
+    },
+    "train_roc_auc": 0.9145713488494794,
+    "learning_curve": {
+      "train_sizes": [
+        4070,
+        10176,
+        20352,
+        30528,
+        40705
+      ],
+      "train_mean": [
+        0.999997172945614,
+        0.999511837020615,
+        0.9865400222940894,
+        0.9627392360505299,
+        0.9419755846042176
+      ],
+      "train_std": [
+        1.5669525934998001e-06,
+        5.067555131036156e-05,
+        0.00028564317337662434,
+        0.0002912153520463618,
+        0.0008234140653370397
+      ],
+      "cv_mean": [
+        0.7503850880124339,
+        0.773635599840896,
+        0.7918761547126207,
+        0.7996737350860815,
+        0.804073487014214
+      ],
+      "cv_std": [
+        0.002471740193613201,
+        0.003331564837945737,
+        0.002660469977181004,
+        0.0012997606255086998,
+        0.0011857771871359904
+      ]
+    },
+    "validation_curve": {
+      "param": "num_leaves",
+      "values": [
+        8,
+        16,
+        32,
+        64,
+        128,
+        256
+      ],
+      "chosen": 136,
+      "train_mean": [
+        0.7985496538985298,
+        0.8187863997018171,
+        0.8474740788564296,
+        0.8873821340058684,
+        0.9376656459508413,
+        0.9827726318829475
+      ],
+      "cv_mean": [
+        0.7880496000048215,
+        0.7945820396294409,
+        0.7992825530990232,
+        0.8027409865330609,
+        0.8045915564878454,
+        0.8034244736448422
+      ],
+      "cv_std": [
+        0.0019142190878442841,
+        0.0017502100619555907,
+        0.0018359591070085425,
+        0.001528550304581251,
+        0.0014411042969806006,
+        0.0016309938915255997
+      ]
+    }
+  },
+  "quality_audit": {
+    "inconsistencies": [
+      {
+        "check": "Booking for zero guests",
+        "rows": 180,
+        "share": 0.001507663958455482,
+        "action": "removed",
+        "why": "A booking for nobody is a data-entry error."
+      },
+      {
+        "check": "Negative price per night",
+        "rows": 1,
+        "share": 8.375910880308233e-06,
+        "action": "removed",
+        "why": "Impossible."
+      },
+      {
+        "check": "Price above 1000 per night",
+        "rows": 1,
+        "share": 8.375910880308233e-06,
+        "action": "removed",
+        "why": "A single row, far above every other price in the data."
+      },
+      {
+        "check": "Meal code 'Undefined'",
+        "rows": 1169,
+        "share": 0.009791439819080325,
+        "action": "merged into SC",
+        "why": "The dataset paper says both codes mean no meal package."
+      },
+      {
+        "check": "Children count missing",
+        "rows": 4,
+        "share": 3.350364352123293e-05,
+        "action": "set to 0",
+        "why": "Missing means none."
+      },
+      {
+        "check": "Country missing",
+        "rows": 488,
+        "share": 0.004087444509590418,
+        "action": "own category",
+        "why": "Country is not a deployed feature; it is used only in the leakage audit."
+      },
+      {
+        "check": "Zero nights booked",
+        "rows": 715,
+        "share": 0.005988776279420387,
+        "action": "kept",
+        "why": "Day-use rooms and same-day departures exist in hotels."
+      },
+      {
+        "check": "Price of exactly 0",
+        "rows": 1959,
+        "share": 0.01640840941452383,
+        "action": "kept",
+        "why": "Complimentary stays and staff bookings are real."
+      },
+      {
+        "check": "No adults, only children or babies",
+        "rows": 223,
+        "share": 0.001867828126308736,
+        "action": "kept",
+        "why": "Usually an extra room attached to a family booking."
+      },
+      {
+        "check": "Market segment or channel 'Undefined'",
+        "rows": 5,
+        "share": 4.1879554401541165e-05,
+        "action": "kept",
+        "why": "A handful of rows; the encoder groups rare categories together."
+      },
+      {
+        "check": "Not flagged as repeated guest, but has earlier bookings",
+        "rows": 6237,
+        "share": 0.052240556160482454,
+        "action": "kept",
+        "why": "The two fields are recorded separately; the model sees both."
+      },
+      {
+        "check": "Flagged as repeated guest, but no earlier bookings",
+        "rows": 590,
+        "share": 0.004941787419381858,
+        "action": "kept",
+        "why": "Same reason."
+      }
+    ],
+    "outliers": [
+      {
+        "column": "lead_time",
+        "median": 69.0,
+        "p99": 444.0,
+        "max": 737.0,
+        "upper_fence": 373.0,
+        "rows_above_fence": 3005,
+        "share_above_fence": 0.025169612195326242,
+        "decision": "kept: bookings a year or more ahead are real (groups, events); the model uses log(1 + lead time)"
+      },
+      {
+        "column": "adr",
+        "median": 94.575,
+        "p99": 252.0,
+        "max": 5400.0,
+        "upper_fence": 211.065,
+        "rows_above_fence": 3793,
+        "share_above_fence": 0.03176982996900913,
+        "decision": "kept up to 1000; the single value above it is removed"
+      },
+      {
+        "column": "stays_in_week_nights",
+        "median": 2.0,
+        "p99": 10.0,
+        "max": 50.0,
+        "upper_fence": 6.0,
+        "rows_above_fence": 3354,
+        "share_above_fence": 0.028092805092553814,
+        "decision": "kept: long stays are real"
+      },
+      {
+        "column": "stays_in_weekend_nights",
+        "median": 1.0,
+        "p99": 4.0,
+        "max": 19.0,
+        "upper_fence": 5.0,
+        "rows_above_fence": 265,
+        "share_above_fence": 0.0022196163832816818,
+        "decision": "kept: long stays are real"
+      },
+      {
+        "column": "adults",
+        "median": 2.0,
+        "p99": 3.0,
+        "max": 55.0,
+        "upper_fence": 2.0,
+        "rows_above_fence": 6280,
+        "share_above_fence": 0.05260072032833571,
+        "decision": "kept: large parties are group bookings"
+      },
+      {
+        "column": "children",
+        "median": 0.0,
+        "p99": 2.0,
+        "max": 10.0,
+        "upper_fence": 0.0,
+        "rows_above_fence": 8590,
+        "share_above_fence": 0.07195148509875529,
+        "decision": "kept"
+      },
+      {
+        "column": "babies",
+        "median": 0.0,
+        "p99": 0.0,
+        "max": 10.0,
+        "upper_fence": 0.0,
+        "rows_above_fence": 917,
+        "share_above_fence": 0.00768071027724265,
+        "decision": "kept"
+      },
+      {
+        "column": "previous_cancellations",
+        "median": 0.0,
+        "p99": 1.0,
+        "max": 26.0,
+        "upper_fence": 0.0,
+        "rows_above_fence": 6484,
+        "share_above_fence": 0.054309406147918585,
+        "decision": "kept: a strong, legitimate signal"
+      },
+      {
+        "column": "previous_bookings_not_canceled",
+        "median": 0.0,
+        "p99": 3.0,
+        "max": 72.0,
+        "upper_fence": 0.0,
+        "rows_above_fence": 3620,
+        "share_above_fence": 0.030320797386715805,
+        "decision": "kept: a strong, legitimate signal"
+      }
+    ]
+  },
+  "duplicates": {
+    "rows": 95910,
+    "repeats": 3,
+    "roc_auc_random_split": 0.8903096469487979,
+    "roc_auc_grouped_split": 0.857725532144782,
+    "roc_auc_grouped_one_per_record": 0.7997569356929962,
+    "roc_auc_grouped_without_non_refundable": 0.7945971772642114,
+    "memorisation": 0.03258411480401591,
+    "population": 0.05796859645178576,
+    "rows_with_copies": {
+      "rows": 30223,
+      "cancel_rate": 0.6311087582304867,
+      "share_groups_segment": 0.404923402706548,
+      "share_non_refundable": 0.38867749727029083
+    },
+    "rows_without_copies": {
+      "rows": 65687,
+      "cancel_rate": 0.2653340843698144,
+      "share_groups_segment": 0.03236561267830773,
+      "share_non_refundable": 0.0032578744652671
+    },
+    "non_refundable": {
+      "rows": 11961,
+      "cancel_rate": 0.9962377727614747
+    }
+  },
+  "first_test_evaluation": {
+    "date": "2026-11-10",
+    "champion": "LightGBM tuned by Bayesian search on a 20,000-row training subsample",
+    "validation_roc_auc": 0.8017,
+    "roc_auc": 0.7974,
+    "roc_auc_ci": [
+      0.7887,
+      0.8049
+    ],
+    "pr_auc": 0.6206,
+    "threshold": 0.61,
+    "precision": 0.8247,
+    "recall": 0.1633,
+    "f1": 0.2726,
+    "what_changed_afterwards": "Only the champion's hyperparameters. The first champion scored lower on validation than LightGBM with default settings, because settings found on a 20,000-row subsample do not transfer to the full training set. A second search stage on all training rows was added. The data, the split, the features, the leakage decisions, the costs and the success criterion are unchanged, and the change was decided on validation data before the test set was scored again."
+  },
+  "temporal_check": {
+    "fit_years": "<= 2016",
+    "eval_year": 2017,
+    "fit_rows": 47276,
+    "eval_rows": 26867,
+    "eval_roc_auc": 0.7635129860867442,
+    "by_month": [
+      {
+        "month": "January",
+        "rows": 2414,
+        "cancel_rate": 0.2609776304888152,
+        "roc_auc": 0.8211416292974589
+      },
+      {
+        "month": "February",
+        "rows": 2774,
+        "cancel_rate": 0.2671232876712329,
+        "roc_auc": 0.7868469842736548
+      },
+      {
+        "month": "March",
+        "rows": 3135,
+        "cancel_rate": 0.2535885167464115,
+        "roc_auc": 0.7708619577487501
+      },
+      {
+        "month": "April",
+        "rows": 3526,
+        "cancel_rate": 0.3369256948383437,
+        "roc_auc": 0.7679311290838238
+      },
+      {
+        "month": "May",
+        "rows": 3879,
+        "cancel_rate": 0.3248259860788863,
+        "roc_auc": 0.7660727164736328
+      },
+      {
+        "month": "June",
+        "rows": 3575,
+        "cancel_rate": 0.3437762237762238,
+        "roc_auc": 0.7257525750598113
+      },
+      {
+        "month": "July",
+        "rows": 3858,
+        "cancel_rate": 0.36106791083462936,
+        "roc_auc": 0.7230483044023361
+      },
+      {
+        "month": "August",
+        "rows": 3706,
+        "cancel_rate": 0.36562331354560174,
+        "roc_auc": 0.7577243569117955
+      }
+    ]
+  },
+  "explain": {
+    "permutation_top10": [
+      {
+        "feature": "log_lead_time",
+        "importance_mean": 0.10309516160221197,
+        "importance_std": 0.0018484053655223544
+      },
+      {
+        "feature": "agent_id",
+        "importance_mean": 0.04635243256272472,
+        "importance_std": 0.0012221488791862695
+      },
+      {
+        "feature": "customer_type",
+        "importance_mean": 0.04286133672742607,
+        "importance_std": 0.0015190589468313755
+      },
+      {
+        "feature": "market_segment",
+        "importance_mean": 0.018121978277977215,
+        "importance_std": 0.0005283649921296322
+      },
+      {
+        "feature": "previous_bookings_not_canceled",
+        "importance_mean": 0.016551171818222254,
+        "importance_std": 0.002315318248190589
+      },
+      {
+        "feature": "deposit_type",
+        "importance_mean": 0.013851874174789214,
+        "importance_std": 0.00037504937941372285
+      },
+      {
+        "feature": "prior_cancel_ratio",
+        "importance_mean": 0.012659790598960673,
+        "importance_std": 0.0007624178446719622
+      },
+      {
+        "feature": "adr",
+        "importance_mean": 0.008659519340133537,
+        "importance_std": 0.0008357222287617727
+      },
+      {
+        "feature": "adr_per_person",
+        "importance_mean": 0.006830308395284956,
+        "importance_std": 0.0003661037284270075
+      },
+      {
+        "feature": "total_nights",
+        "importance_mean": 0.006053127259392155,
+        "importance_std": 0.00043945394437139995
+      }
+    ],
+    "shap_top10": [
+      {
+        "feature": "log_lead_time",
+        "mean_abs_shap": 0.50975908282928
+      },
+      {
+        "feature": "agent_id",
+        "mean_abs_shap": 0.295818902798819
+      },
+      {
+        "feature": "customer_type",
+        "mean_abs_shap": 0.22898380368370397
+      },
+      {
+        "feature": "market_segment",
+        "mean_abs_shap": 0.1865956283255229
+      },
+      {
+        "feature": "deposit_type",
+        "mean_abs_shap": 0.13152348012076484
+      },
+      {
+        "feature": "prior_cancel_ratio",
+        "mean_abs_shap": 0.1222225585813015
+      },
+      {
+        "feature": "previous_bookings_not_canceled",
+        "mean_abs_shap": 0.10911611314196798
+      },
+      {
+        "feature": "adr",
+        "mean_abs_shap": 0.08262827264382826
+      },
+      {
+        "feature": "adr_per_person",
+        "mean_abs_shap": 0.07460523268730644
+      },
+      {
+        "feature": "arrival_week",
+        "mean_abs_shap": 0.061642166324440036
+      }
+    ]
+  },
+  "test": {
+    "models": {
+      "dummy": {
+        "metrics": {
+          "roc_auc": 0.5,
+          "pr_auc": 0.27520061138708446,
+          "brier": 0.19946523698382637,
+          "accuracy": 0.7247993886129156,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "threshold": 0.28
+        },
+        "metrics_at_0_5": {
+          "roc_auc": 0.5,
+          "pr_auc": 0.27520061138708446,
+          "brier": 0.19946523698382637,
+          "accuracy": 0.7247993886129156,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "threshold": 0.5
+        },
+        "cost_per_booking": 0.27520061138708446,
+        "confusion": [
+          [
+            9484,
+            0
+          ],
+          [
+            3601,
+            0
+          ]
+        ]
+      },
+      "logreg": {
+        "metrics": {
+          "roc_auc": 0.7740497127479117,
+          "pr_auc": 0.5915866430667054,
+          "brier": 0.15799584444516876,
+          "accuracy": 0.7514711501719527,
+          "precision": 0.8525252525252526,
+          "recall": 0.11718966953623994,
+          "f1": 0.2060546875,
+          "threshold": 0.61
+        },
+        "metrics_at_0_5": {
+          "roc_auc": 0.7740497127479117,
+          "pr_auc": 0.5915866430667054,
+          "brier": 0.15799584444516876,
+          "accuracy": 0.7608712265953381,
+          "precision": 0.6308203991130821,
+          "recall": 0.31602332685365175,
+          "f1": 0.42109158186864015,
+          "threshold": 0.5
+        },
+        "cost_per_booking": 0.2541077569736339,
+        "confusion": [
+          [
+            9411,
+            73
+          ],
+          [
+            3179,
+            422
+          ]
+        ]
+      },
+      "champion": {
+        "metrics": {
+          "roc_auc": 0.8068691759435586,
+          "pr_auc": 0.6355060495607282,
+          "brier": 0.1487420770565134,
+          "accuracy": 0.765533053114253,
+          "precision": 0.8116959064327486,
+          "recall": 0.19272424326575952,
+          "f1": 0.3114901256732496,
+          "threshold": 0.63
+        },
+        "metrics_at_0_5": {
+          "roc_auc": 0.8068691759435586,
+          "pr_auc": 0.6355060495607282,
+          "brier": 0.1487420770565134,
+          "accuracy": 0.773251815055407,
+          "precision": 0.6609137055837564,
+          "recall": 0.3615662316023327,
+          "f1": 0.4674205708131395,
+          "threshold": 0.5
+        },
+        "cost_per_booking": 0.24677111196025983,
+        "confusion": [
+          [
+            9323,
+            161
+          ],
+          [
+            2907,
+            694
+          ]
+        ],
+        "ci": {
+          "roc_auc": {
+            "low": 0.7988972297585769,
+            "high": 0.8141366576809749
+          },
+          "pr_auc": {
+            "low": 0.6201525998094043,
+            "high": 0.6508918237618928
+          },
+          "brier": {
+            "low": 0.14560522148171168,
+            "high": 0.15245044619883222
+          },
+          "accuracy": {
+            "low": 0.7582728314864349,
+            "high": 0.77279518532671
+          },
+          "precision": {
+            "low": 0.785150012486851,
+            "high": 0.8365409859976664
+          },
+          "recall": {
+            "low": 0.17919808429299303,
+            "high": 0.20611062150761247
+          },
+          "f1": {
+            "low": 0.2925503209050366,
+            "high": 0.32960988606842156
+          }
+        },
+        "operating_metrics": [
+          {
+            "operating_point": "cost-based (deployed)",
+            "threshold": 0.63,
+            "flagged_share": 0.06534199465036301,
+            "accuracy": 0.765533053114253,
+            "precision": 0.8116959064327486,
+            "recall": 0.19272424326575952,
+            "f1": 0.3114901256732496
+          },
+          {
+            "operating_point": "default 0.5",
+            "threshold": 0.5,
+            "flagged_share": 0.15055406954528086,
+            "accuracy": 0.773251815055407,
+            "precision": 0.6609137055837564,
+            "recall": 0.3615662316023327,
+            "f1": 0.4674205708131395
+          },
+          {
+            "operating_point": "best F1",
+            "threshold": 0.29,
+            "flagged_share": 0.40496752006113873,
+            "accuracy": 0.730531142529614,
+            "precision": 0.5070768069447066,
+            "recall": 0.7461816162177173,
+            "f1": 0.6038202247191011
+          }
+        ],
+        "cost_sensitivity": [
+          {
+            "false_alarm_cost": 0.2,
+            "threshold": 0.17,
+            "flagged_share": 0.5373328238440963,
+            "precision": 0.439908974541317,
+            "recall": 0.8589280755345737,
+            "f1": 0.5818284424379232,
+            "cost_per_booking": 0.09901413832632786,
+            "cost_without_model": 0.14495987772258312,
+            "saving": 0.3169548713622944
+          },
+          {
+            "false_alarm_cost": 0.5,
+            "threshold": 0.31,
+            "flagged_share": 0.3888421857088269,
+            "precision": 0.5155267295597484,
+            "recall": 0.7284087753401833,
+            "f1": 0.6037518701806882,
+            "cost_per_booking": 0.16893389377149406,
+            "cost_without_model": 0.27520061138708446,
+            "saving": 0.3861427381282978
+          },
+          {
+            "false_alarm_cost": 1.0,
+            "threshold": 0.5,
+            "flagged_share": 0.15055406954528086,
+            "precision": 0.6609137055837564,
+            "recall": 0.3615662316023327,
+            "f1": 0.4674205708131395,
+            "cost_per_booking": 0.22674818494459303,
+            "cost_without_model": 0.27520061138708446,
+            "saving": 0.17606220494307145
+          },
+          {
+            "false_alarm_cost": 2.0,
+            "threshold": 0.63,
+            "flagged_share": 0.06534199465036301,
+            "precision": 0.8116959064327486,
+            "recall": 0.19272424326575952,
+            "f1": 0.3114901256732496,
+            "cost_per_booking": 0.24677111196025983,
+            "cost_without_model": 0.27520061138708446,
+            "saving": 0.10330463760066655
+          },
+          {
+            "false_alarm_cost": 3.0,
+            "threshold": 0.74,
+            "flagged_share": 0.038899503247993884,
+            "precision": 0.9056974459724951,
+            "recall": 0.12801999444598722,
+            "f1": 0.224330900243309,
+            "cost_per_booking": 0.2509743981658387,
+            "cost_without_model": 0.27520061138708446,
+            "saving": 0.08803110247153578
+          }
+        ],
+        "gains": [
+          {
+            "risk_group": 1,
+            "bookings": 1309,
+            "cancel_rate": 0.7425515660809778,
+            "lift": 2.6982191730545946,
+            "cumulative_share_of_bookings": 0.1,
+            "cumulative_share_of_cancellations": 0.2699250208275479
+          },
+          {
+            "risk_group": 2,
+            "bookings": 1309,
+            "cancel_rate": 0.5003819709702063,
+            "lift": 1.8182444015954315,
+            "cumulative_share_of_bookings": 0.2,
+            "cumulative_share_of_cancellations": 0.45181893918356014
+          },
+          {
+            "risk_group": 3,
+            "bookings": 1309,
+            "cancel_rate": 0.44690603514132926,
+            "lift": 1.62392820600508,
+            "cumulative_share_of_bookings": 0.3,
+            "cumulative_share_of_cancellations": 0.6142738128297696
+          },
+          {
+            "risk_group": 4,
+            "bookings": 1309,
+            "cancel_rate": 0.35064935064935066,
+            "lift": 1.2741590539424474,
+            "cumulative_share_of_bookings": 0.4,
+            "cumulative_share_of_cancellations": 0.7417384059983338
+          },
+          {
+            "risk_group": 5,
+            "bookings": 1309,
+            "cancel_rate": 0.24293353705118412,
+            "lift": 0.8827507171104537,
+            "cumulative_share_of_bookings": 0.5,
+            "cumulative_share_of_cancellations": 0.830047209108581
+          },
+          {
+            "risk_group": 6,
+            "bookings": 1308,
+            "cancel_rate": 0.1643730886850153,
+            "lift": 0.5972846057882325,
+            "cumulative_share_of_bookings": 0.6,
+            "cumulative_share_of_cancellations": 0.8897528464315468
+          },
+          {
+            "risk_group": 7,
+            "bookings": 1308,
+            "cancel_rate": 0.11926605504587157,
+            "lift": 0.43337859768820586,
+            "cumulative_share_of_bookings": 0.7,
+            "cumulative_share_of_cancellations": 0.933074146070536
+          },
+          {
+            "risk_group": 8,
+            "bookings": 1308,
+            "cancel_rate": 0.10626911314984709,
+            "lift": 0.386151442811927,
+            "cumulative_share_of_bookings": 0.8,
+            "cumulative_share_of_cancellations": 0.9716745348514302
+          },
+          {
+            "risk_group": 9,
+            "bookings": 1308,
+            "cancel_rate": 0.052752293577981654,
+            "lift": 0.19168668743901415,
+            "cumulative_share_of_bookings": 0.9,
+            "cumulative_share_of_cancellations": 0.9908358789225216
+          },
+          {
+            "risk_group": 10,
+            "bookings": 1308,
+            "cancel_rate": 0.02522935779816514,
+            "lift": 0.09167624181865894,
+            "cumulative_share_of_bookings": 1.0,
+            "cumulative_share_of_cancellations": 1.0
+          }
+        ],
+        "capacity": {
+          "weeks": 228,
+          "bookings_per_week_median": 51.5,
+          "total_actual": 3601.0,
+          "total_predicted": 3558.9451377803916,
+          "bias": -0.011678662099308124,
+          "wape_model": 0.1541091115411259,
+          "wape_base_rate": 0.25168483076020365,
+          "correlation": 0.950684237295673,
+          "by_week": [
+            {
+              "hotel": "City Hotel",
+              "week": "2015-06-29",
+              "bookings": 9,
+              "actual": 7.0,
+              "predicted": 6.1839093822459965,
+              "base_rate_forecast": 2.4772183825215373
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-07-06",
+              "bookings": 13,
+              "actual": 11.0,
+              "predicted": 8.129854009914851,
+              "base_rate_forecast": 3.578204330308887
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-07-13",
+              "bookings": 13,
+              "actual": 10.0,
+              "predicted": 7.430074873462928,
+              "base_rate_forecast": 3.578204330308887
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-07-20",
+              "bookings": 18,
+              "actual": 7.0,
+              "predicted": 7.151402256145906,
+              "base_rate_forecast": 4.9544367650430745
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-07-27",
+              "bookings": 13,
+              "actual": 2.0,
+              "predicted": 3.8446077924504554,
+              "base_rate_forecast": 3.578204330308887
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-08-03",
+              "bookings": 41,
+              "actual": 8.0,
+              "predicted": 9.231520296384375,
+              "base_rate_forecast": 11.285105964820335
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-08-10",
+              "bookings": 47,
+              "actual": 12.0,
+              "predicted": 11.227023399192424,
+              "base_rate_forecast": 12.936584886501361
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-08-17",
+              "bookings": 51,
+              "actual": 10.0,
+              "predicted": 8.064679502162546,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-08-24",
+              "bookings": 37,
+              "actual": 14.0,
+              "predicted": 8.946035015715134,
+              "base_rate_forecast": 10.184120017032987
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-08-31",
+              "bookings": 56,
+              "actual": 7.0,
+              "predicted": 12.012206667842026,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-09-07",
+              "bookings": 55,
+              "actual": 8.0,
+              "predicted": 11.239288420502216,
+              "base_rate_forecast": 15.13855678207606
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-09-14",
+              "bookings": 75,
+              "actual": 15.0,
+              "predicted": 18.07749378297466,
+              "base_rate_forecast": 20.643486521012807
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-09-21",
+              "bookings": 56,
+              "actual": 13.0,
+              "predicted": 14.00953329974808,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-09-28",
+              "bookings": 51,
+              "actual": 11.0,
+              "predicted": 11.067427903235167,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-10-05",
+              "bookings": 62,
+              "actual": 13.0,
+              "predicted": 12.586121121938382,
+              "base_rate_forecast": 17.065282190703922
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-10-12",
+              "bookings": 51,
+              "actual": 7.0,
+              "predicted": 9.700782265743696,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-10-19",
+              "bookings": 45,
+              "actual": 10.0,
+              "predicted": 12.16790004507011,
+              "base_rate_forecast": 12.386091912607686
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-10-26",
+              "bookings": 34,
+              "actual": 11.0,
+              "predicted": 10.439426354020886,
+              "base_rate_forecast": 9.358380556192474
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-11-02",
+              "bookings": 29,
+              "actual": 4.0,
+              "predicted": 5.467889761537955,
+              "base_rate_forecast": 7.982148121458287
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-11-09",
+              "bookings": 19,
+              "actual": 3.0,
+              "predicted": 4.153675297414244,
+              "base_rate_forecast": 5.229683251989911
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-11-16",
+              "bookings": 36,
+              "actual": 2.0,
+              "predicted": 6.15038495709918,
+              "base_rate_forecast": 9.908873530086149
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-11-23",
+              "bookings": 32,
+              "actual": 7.0,
+              "predicted": 5.481240393009886,
+              "base_rate_forecast": 8.807887582298799
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-11-30",
+              "bookings": 44,
+              "actual": 9.0,
+              "predicted": 9.73259531074579,
+              "base_rate_forecast": 12.110845425660848
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-12-07",
+              "bookings": 21,
+              "actual": 6.0,
+              "predicted": 4.368485321589421,
+              "base_rate_forecast": 5.7801762258835865
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-12-14",
+              "bookings": 18,
+              "actual": 3.0,
+              "predicted": 3.3024446600490873,
+              "base_rate_forecast": 4.9544367650430745
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-12-21",
+              "bookings": 30,
+              "actual": 3.0,
+              "predicted": 4.477019253100848,
+              "base_rate_forecast": 8.257394608405123
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2015-12-28",
+              "bookings": 51,
+              "actual": 15.0,
+              "predicted": 14.687693609765507,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-01-04",
+              "bookings": 22,
+              "actual": 2.0,
+              "predicted": 2.6572307739477945,
+              "base_rate_forecast": 6.055422712830424
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-01-11",
+              "bookings": 31,
+              "actual": 10.0,
+              "predicted": 10.09938957394325,
+              "base_rate_forecast": 8.532641095351961
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-01-18",
+              "bookings": 40,
+              "actual": 8.0,
+              "predicted": 8.941725503945383,
+              "base_rate_forecast": 11.009859477873498
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-01-25",
+              "bookings": 41,
+              "actual": 10.0,
+              "predicted": 7.875006252066383,
+              "base_rate_forecast": 11.285105964820335
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-02-01",
+              "bookings": 51,
+              "actual": 11.0,
+              "predicted": 10.410476859786844,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-02-08",
+              "bookings": 71,
+              "actual": 20.0,
+              "predicted": 19.93937146106386,
+              "base_rate_forecast": 19.54250057322546
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-02-15",
+              "bookings": 54,
+              "actual": 7.0,
+              "predicted": 10.341438291094471,
+              "base_rate_forecast": 14.863310295129223
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-02-22",
+              "bookings": 50,
+              "actual": 12.0,
+              "predicted": 11.830088152064938,
+              "base_rate_forecast": 13.762324347341872
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-02-29",
+              "bookings": 80,
+              "actual": 18.0,
+              "predicted": 17.828458015466826,
+              "base_rate_forecast": 22.019718955746995
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-03-07",
+              "bookings": 85,
+              "actual": 20.0,
+              "predicted": 21.910721208533555,
+              "base_rate_forecast": 23.395951390481184
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-03-14",
+              "bookings": 79,
+              "actual": 23.0,
+              "predicted": 19.943788409148492,
+              "base_rate_forecast": 21.744472468800158
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-03-21",
+              "bookings": 84,
+              "actual": 32.0,
+              "predicted": 21.109423534511215,
+              "base_rate_forecast": 23.120704903534346
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-03-28",
+              "bookings": 89,
+              "actual": 23.0,
+              "predicted": 25.60123382816693,
+              "base_rate_forecast": 24.496937338268534
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-04-04",
+              "bookings": 71,
+              "actual": 22.0,
+              "predicted": 20.61208469906564,
+              "base_rate_forecast": 19.54250057322546
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-04-11",
+              "bookings": 74,
+              "actual": 19.0,
+              "predicted": 19.233027311124104,
+              "base_rate_forecast": 20.368240034065973
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-04-18",
+              "bookings": 81,
+              "actual": 21.0,
+              "predicted": 22.956967872728153,
+              "base_rate_forecast": 22.294965442693833
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-04-25",
+              "bookings": 90,
+              "actual": 30.0,
+              "predicted": 29.986451766881732,
+              "base_rate_forecast": 24.77218382521537
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-05-02",
+              "bookings": 92,
+              "actual": 23.0,
+              "predicted": 27.272999074483337,
+              "base_rate_forecast": 25.322676799109047
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-05-09",
+              "bookings": 69,
+              "actual": 22.0,
+              "predicted": 22.312527841528894,
+              "base_rate_forecast": 18.992007599331785
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-05-16",
+              "bookings": 100,
+              "actual": 28.0,
+              "predicted": 26.878903162842484,
+              "base_rate_forecast": 27.524648694683744
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-05-23",
+              "bookings": 75,
+              "actual": 24.0,
+              "predicted": 19.796447802803133,
+              "base_rate_forecast": 20.643486521012807
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-05-30",
+              "bookings": 80,
+              "actual": 25.0,
+              "predicted": 21.51324959568101,
+              "base_rate_forecast": 22.019718955746995
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-06-06",
+              "bookings": 83,
+              "actual": 21.0,
+              "predicted": 18.952871779011677,
+              "base_rate_forecast": 22.84545841658751
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-06-13",
+              "bookings": 77,
+              "actual": 14.0,
+              "predicted": 18.602975566856973,
+              "base_rate_forecast": 21.193979494906483
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-06-20",
+              "bookings": 72,
+              "actual": 19.0,
+              "predicted": 19.492518731404754,
+              "base_rate_forecast": 19.817747060172298
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-06-27",
+              "bookings": 100,
+              "actual": 40.0,
+              "predicted": 35.552987152355875,
+              "base_rate_forecast": 27.524648694683744
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-07-04",
+              "bookings": 92,
+              "actual": 22.0,
+              "predicted": 25.96122582390061,
+              "base_rate_forecast": 25.322676799109047
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-07-11",
+              "bookings": 80,
+              "actual": 19.0,
+              "predicted": 21.939036891107047,
+              "base_rate_forecast": 22.019718955746995
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-07-18",
+              "bookings": 80,
+              "actual": 22.0,
+              "predicted": 23.5904453550427,
+              "base_rate_forecast": 22.019718955746995
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-07-25",
+              "bookings": 64,
+              "actual": 15.0,
+              "predicted": 17.63698296921439,
+              "base_rate_forecast": 17.615775164597597
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-08-01",
+              "bookings": 103,
+              "actual": 35.0,
+              "predicted": 31.307847472034403,
+              "base_rate_forecast": 28.350388155524257
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-08-08",
+              "bookings": 98,
+              "actual": 28.0,
+              "predicted": 32.737493430107364,
+              "base_rate_forecast": 26.97415572079007
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-08-15",
+              "bookings": 79,
+              "actual": 27.0,
+              "predicted": 26.27154733769208,
+              "base_rate_forecast": 21.744472468800158
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-08-22",
+              "bookings": 76,
+              "actual": 24.0,
+              "predicted": 22.835610610309526,
+              "base_rate_forecast": 20.918733007959645
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-08-29",
+              "bookings": 90,
+              "actual": 24.0,
+              "predicted": 29.717145622098588,
+              "base_rate_forecast": 24.77218382521537
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-09-05",
+              "bookings": 97,
+              "actual": 32.0,
+              "predicted": 32.368850393706644,
+              "base_rate_forecast": 26.69890923384323
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-09-12",
+              "bookings": 97,
+              "actual": 31.0,
+              "predicted": 28.147243655952238,
+              "base_rate_forecast": 26.69890923384323
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-09-19",
+              "bookings": 76,
+              "actual": 20.0,
+              "predicted": 18.8675697573143,
+              "base_rate_forecast": 20.918733007959645
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-09-26",
+              "bookings": 102,
+              "actual": 31.0,
+              "predicted": 26.76395780121347,
+              "base_rate_forecast": 28.07514166857742
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-10-03",
+              "bookings": 101,
+              "actual": 36.0,
+              "predicted": 33.680025313406084,
+              "base_rate_forecast": 27.799895181630582
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-10-10",
+              "bookings": 81,
+              "actual": 16.0,
+              "predicted": 21.21964194274376,
+              "base_rate_forecast": 22.294965442693833
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-10-17",
+              "bookings": 83,
+              "actual": 22.0,
+              "predicted": 27.098097440218265,
+              "base_rate_forecast": 22.84545841658751
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-10-24",
+              "bookings": 89,
+              "actual": 34.0,
+              "predicted": 27.276896983136528,
+              "base_rate_forecast": 24.496937338268534
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-10-31",
+              "bookings": 71,
+              "actual": 26.0,
+              "predicted": 20.68471225664394,
+              "base_rate_forecast": 19.54250057322546
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-11-07",
+              "bookings": 77,
+              "actual": 20.0,
+              "predicted": 16.884097133952263,
+              "base_rate_forecast": 21.193979494906483
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-11-14",
+              "bookings": 89,
+              "actual": 30.0,
+              "predicted": 27.31208681371158,
+              "base_rate_forecast": 24.496937338268534
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-11-21",
+              "bookings": 90,
+              "actual": 28.0,
+              "predicted": 23.59574070939165,
+              "base_rate_forecast": 24.77218382521537
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-11-28",
+              "bookings": 54,
+              "actual": 16.0,
+              "predicted": 16.931960209609507,
+              "base_rate_forecast": 14.863310295129223
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-12-05",
+              "bookings": 64,
+              "actual": 17.0,
+              "predicted": 22.250297187629098,
+              "base_rate_forecast": 17.615775164597597
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-12-12",
+              "bookings": 50,
+              "actual": 13.0,
+              "predicted": 13.806095443292605,
+              "base_rate_forecast": 13.762324347341872
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-12-19",
+              "bookings": 48,
+              "actual": 21.0,
+              "predicted": 20.577304141407154,
+              "base_rate_forecast": 13.211831373448199
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2016-12-26",
+              "bookings": 73,
+              "actual": 29.0,
+              "predicted": 30.994971247256956,
+              "base_rate_forecast": 20.092993547119136
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-01-02",
+              "bookings": 63,
+              "actual": 18.0,
+              "predicted": 25.3993207968374,
+              "base_rate_forecast": 17.34052867765076
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-01-09",
+              "bookings": 39,
+              "actual": 12.0,
+              "predicted": 15.197107635400453,
+              "base_rate_forecast": 10.73461299092666
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-01-16",
+              "bookings": 59,
+              "actual": 16.0,
+              "predicted": 16.643679141080955,
+              "base_rate_forecast": 16.23954272986341
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-01-23",
+              "bookings": 58,
+              "actual": 23.0,
+              "predicted": 18.503184158511605,
+              "base_rate_forecast": 15.964296242916573
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-01-30",
+              "bookings": 63,
+              "actual": 22.0,
+              "predicted": 15.85933144867816,
+              "base_rate_forecast": 17.34052867765076
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-02-06",
+              "bookings": 59,
+              "actual": 20.0,
+              "predicted": 18.192100751084148,
+              "base_rate_forecast": 16.23954272986341
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-02-13",
+              "bookings": 76,
+              "actual": 26.0,
+              "predicted": 21.674744944668806,
+              "base_rate_forecast": 20.918733007959645
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-02-20",
+              "bookings": 81,
+              "actual": 21.0,
+              "predicted": 22.71575031581449,
+              "base_rate_forecast": 22.294965442693833
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-02-27",
+              "bookings": 85,
+              "actual": 25.0,
+              "predicted": 23.518046199719794,
+              "base_rate_forecast": 23.395951390481184
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-03-06",
+              "bookings": 76,
+              "actual": 26.0,
+              "predicted": 21.369291601033357,
+              "base_rate_forecast": 20.918733007959645
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-03-13",
+              "bookings": 88,
+              "actual": 29.0,
+              "predicted": 25.87908413963287,
+              "base_rate_forecast": 24.221690851321696
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-03-20",
+              "bookings": 61,
+              "actual": 24.0,
+              "predicted": 20.203824032446747,
+              "base_rate_forecast": 16.790035703757084
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-03-27",
+              "bookings": 68,
+              "actual": 16.0,
+              "predicted": 19.84089341758842,
+              "base_rate_forecast": 18.716761112384948
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-04-03",
+              "bookings": 82,
+              "actual": 31.0,
+              "predicted": 30.20588329710887,
+              "base_rate_forecast": 22.57021192964067
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-04-10",
+              "bookings": 111,
+              "actual": 46.0,
+              "predicted": 44.454374704133436,
+              "base_rate_forecast": 30.552360051098958
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-04-17",
+              "bookings": 96,
+              "actual": 33.0,
+              "predicted": 38.26564417105853,
+              "base_rate_forecast": 26.423662746896397
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-04-24",
+              "bookings": 88,
+              "actual": 31.0,
+              "predicted": 32.36889946484249,
+              "base_rate_forecast": 24.221690851321696
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-05-01",
+              "bookings": 137,
+              "actual": 59.0,
+              "predicted": 54.44979718950782,
+              "base_rate_forecast": 37.70876871171673
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-05-08",
+              "bookings": 103,
+              "actual": 35.0,
+              "predicted": 31.950437843562604,
+              "base_rate_forecast": 28.350388155524257
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-05-15",
+              "bookings": 91,
+              "actual": 39.0,
+              "predicted": 37.41743905072056,
+              "base_rate_forecast": 25.04743031216221
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-05-22",
+              "bookings": 102,
+              "actual": 36.0,
+              "predicted": 39.64278397001298,
+              "base_rate_forecast": 28.07514166857742
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-05-29",
+              "bookings": 79,
+              "actual": 28.0,
+              "predicted": 26.19047876406207,
+              "base_rate_forecast": 21.744472468800158
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-06-05",
+              "bookings": 106,
+              "actual": 40.0,
+              "predicted": 36.81796895185541,
+              "base_rate_forecast": 29.17612761636477
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-06-12",
+              "bookings": 86,
+              "actual": 22.0,
+              "predicted": 27.08025506073649,
+              "base_rate_forecast": 23.67119787742802
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-06-19",
+              "bookings": 95,
+              "actual": 36.0,
+              "predicted": 33.67045569861161,
+              "base_rate_forecast": 26.14841625994956
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-06-26",
+              "bookings": 98,
+              "actual": 31.0,
+              "predicted": 34.49540877916725,
+              "base_rate_forecast": 26.97415572079007
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-07-03",
+              "bookings": 98,
+              "actual": 33.0,
+              "predicted": 33.64542589393031,
+              "base_rate_forecast": 26.97415572079007
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-07-10",
+              "bookings": 105,
+              "actual": 29.0,
+              "predicted": 35.20126815235934,
+              "base_rate_forecast": 28.900881129417932
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-07-17",
+              "bookings": 85,
+              "actual": 17.0,
+              "predicted": 28.031660253730212,
+              "base_rate_forecast": 23.395951390481184
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-07-24",
+              "bookings": 105,
+              "actual": 33.0,
+              "predicted": 36.222858373493494,
+              "base_rate_forecast": 28.900881129417932
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-07-31",
+              "bookings": 88,
+              "actual": 31.0,
+              "predicted": 33.18607473504999,
+              "base_rate_forecast": 24.221690851321696
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-08-07",
+              "bookings": 96,
+              "actual": 39.0,
+              "predicted": 35.15414598004313,
+              "base_rate_forecast": 26.423662746896397
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-08-14",
+              "bookings": 111,
+              "actual": 42.0,
+              "predicted": 39.92221540261511,
+              "base_rate_forecast": 30.552360051098958
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-08-21",
+              "bookings": 94,
+              "actual": 36.0,
+              "predicted": 31.996040467806317,
+              "base_rate_forecast": 25.873169773002722
+            },
+            {
+              "hotel": "City Hotel",
+              "week": "2017-08-28",
+              "bookings": 38,
+              "actual": 12.0,
+              "predicted": 14.871685566368967,
+              "base_rate_forecast": 10.459366503979822
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-06-29",
+              "bookings": 27,
+              "actual": 8.0,
+              "predicted": 7.224203524404128,
+              "base_rate_forecast": 7.431655147564611
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-07-06",
+              "bookings": 56,
+              "actual": 9.0,
+              "predicted": 14.098965934888824,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-07-13",
+              "bookings": 41,
+              "actual": 12.0,
+              "predicted": 9.98158728297165,
+              "base_rate_forecast": 11.285105964820335
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-07-20",
+              "bookings": 32,
+              "actual": 9.0,
+              "predicted": 9.811637558567709,
+              "base_rate_forecast": 8.807887582298799
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-07-27",
+              "bookings": 50,
+              "actual": 19.0,
+              "predicted": 13.133292218587826,
+              "base_rate_forecast": 13.762324347341872
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-08-03",
+              "bookings": 41,
+              "actual": 12.0,
+              "predicted": 14.829446299224529,
+              "base_rate_forecast": 11.285105964820335
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-08-10",
+              "bookings": 60,
+              "actual": 12.0,
+              "predicted": 15.294971372389725,
+              "base_rate_forecast": 16.514789216810247
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-08-17",
+              "bookings": 48,
+              "actual": 11.0,
+              "predicted": 13.40136806487154,
+              "base_rate_forecast": 13.211831373448199
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-08-24",
+              "bookings": 45,
+              "actual": 7.0,
+              "predicted": 12.03809886591296,
+              "base_rate_forecast": 12.386091912607686
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-08-31",
+              "bookings": 32,
+              "actual": 6.0,
+              "predicted": 10.977526537110121,
+              "base_rate_forecast": 8.807887582298799
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-09-07",
+              "bookings": 47,
+              "actual": 15.0,
+              "predicted": 11.859255723729905,
+              "base_rate_forecast": 12.936584886501361
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-09-14",
+              "bookings": 51,
+              "actual": 3.0,
+              "predicted": 9.300027869436871,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-09-21",
+              "bookings": 47,
+              "actual": 7.0,
+              "predicted": 9.524297339145226,
+              "base_rate_forecast": 12.936584886501361
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-09-28",
+              "bookings": 42,
+              "actual": 9.0,
+              "predicted": 8.808100233925297,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-10-05",
+              "bookings": 54,
+              "actual": 12.0,
+              "predicted": 9.544548209638656,
+              "base_rate_forecast": 14.863310295129223
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-10-12",
+              "bookings": 33,
+              "actual": 4.0,
+              "predicted": 3.517549469741191,
+              "base_rate_forecast": 9.083134069245636
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-10-19",
+              "bookings": 42,
+              "actual": 5.0,
+              "predicted": 4.3458594258027,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-10-26",
+              "bookings": 37,
+              "actual": 4.0,
+              "predicted": 4.06372663331862,
+              "base_rate_forecast": 10.184120017032987
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-11-02",
+              "bookings": 29,
+              "actual": 4.0,
+              "predicted": 3.3130006248036294,
+              "base_rate_forecast": 7.982148121458287
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-11-09",
+              "bookings": 26,
+              "actual": 7.0,
+              "predicted": 2.804376898575779,
+              "base_rate_forecast": 7.156408660617774
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-11-16",
+              "bookings": 42,
+              "actual": 5.0,
+              "predicted": 6.361461667647089,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-11-23",
+              "bookings": 36,
+              "actual": 1.0,
+              "predicted": 2.3041638865881175,
+              "base_rate_forecast": 9.908873530086149
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-11-30",
+              "bookings": 42,
+              "actual": 5.0,
+              "predicted": 5.499540658875002,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-12-07",
+              "bookings": 20,
+              "actual": 3.0,
+              "predicted": 1.2682679764630858,
+              "base_rate_forecast": 5.504929738936749
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-12-14",
+              "bookings": 25,
+              "actual": 2.0,
+              "predicted": 4.28331735708817,
+              "base_rate_forecast": 6.881162173670936
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-12-21",
+              "bookings": 44,
+              "actual": 11.0,
+              "predicted": 11.714310505590115,
+              "base_rate_forecast": 12.110845425660848
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2015-12-28",
+              "bookings": 42,
+              "actual": 10.0,
+              "predicted": 9.009115435484235,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-01-04",
+              "bookings": 16,
+              "actual": 3.0,
+              "predicted": 2.654254386149419,
+              "base_rate_forecast": 4.403943791149399
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-01-11",
+              "bookings": 25,
+              "actual": 0.0,
+              "predicted": 1.686563113852659,
+              "base_rate_forecast": 6.881162173670936
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-01-18",
+              "bookings": 27,
+              "actual": 2.0,
+              "predicted": 2.2142602127952644,
+              "base_rate_forecast": 7.431655147564611
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-01-25",
+              "bookings": 24,
+              "actual": 3.0,
+              "predicted": 3.64065200046103,
+              "base_rate_forecast": 6.605915686724099
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-02-01",
+              "bookings": 43,
+              "actual": 3.0,
+              "predicted": 5.482014361132026,
+              "base_rate_forecast": 11.83559893871401
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-02-08",
+              "bookings": 47,
+              "actual": 8.0,
+              "predicted": 8.861851568348069,
+              "base_rate_forecast": 12.936584886501361
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-02-15",
+              "bookings": 26,
+              "actual": 5.0,
+              "predicted": 2.8014101768209367,
+              "base_rate_forecast": 7.156408660617774
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-02-22",
+              "bookings": 46,
+              "actual": 5.0,
+              "predicted": 7.6870668622557465,
+              "base_rate_forecast": 12.661338399554523
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-02-29",
+              "bookings": 38,
+              "actual": 3.0,
+              "predicted": 5.1598741372538,
+              "base_rate_forecast": 10.459366503979822
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-03-07",
+              "bookings": 42,
+              "actual": 5.0,
+              "predicted": 8.28810236478365,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-03-14",
+              "bookings": 50,
+              "actual": 16.0,
+              "predicted": 7.549193093355882,
+              "base_rate_forecast": 13.762324347341872
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-03-21",
+              "bookings": 44,
+              "actual": 9.0,
+              "predicted": 8.986824021656888,
+              "base_rate_forecast": 12.110845425660848
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-03-28",
+              "bookings": 41,
+              "actual": 7.0,
+              "predicted": 6.4882275636853,
+              "base_rate_forecast": 11.285105964820335
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-04-04",
+              "bookings": 51,
+              "actual": 5.0,
+              "predicted": 6.160092205054438,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-04-11",
+              "bookings": 43,
+              "actual": 7.0,
+              "predicted": 8.091446436401139,
+              "base_rate_forecast": 11.83559893871401
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-04-18",
+              "bookings": 56,
+              "actual": 13.0,
+              "predicted": 12.808937643137861,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-04-25",
+              "bookings": 67,
+              "actual": 20.0,
+              "predicted": 17.848354091480786,
+              "base_rate_forecast": 18.44151462543811
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-05-02",
+              "bookings": 66,
+              "actual": 10.0,
+              "predicted": 12.764215899570695,
+              "base_rate_forecast": 18.166268138491272
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-05-09",
+              "bookings": 43,
+              "actual": 12.0,
+              "predicted": 7.106393630114854,
+              "base_rate_forecast": 11.83559893871401
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-05-16",
+              "bookings": 42,
+              "actual": 7.0,
+              "predicted": 10.15934354279847,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-05-23",
+              "bookings": 40,
+              "actual": 8.0,
+              "predicted": 8.820600142442824,
+              "base_rate_forecast": 11.009859477873498
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-05-30",
+              "bookings": 60,
+              "actual": 16.0,
+              "predicted": 16.004659249033185,
+              "base_rate_forecast": 16.514789216810247
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-06-06",
+              "bookings": 34,
+              "actual": 7.0,
+              "predicted": 10.201332312810301,
+              "base_rate_forecast": 9.358380556192474
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-06-13",
+              "bookings": 34,
+              "actual": 12.0,
+              "predicted": 9.615324741831643,
+              "base_rate_forecast": 9.358380556192474
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-06-20",
+              "bookings": 47,
+              "actual": 12.0,
+              "predicted": 11.933006794011968,
+              "base_rate_forecast": 12.936584886501361
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-06-27",
+              "bookings": 35,
+              "actual": 9.0,
+              "predicted": 10.308009963164931,
+              "base_rate_forecast": 9.633627043139311
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-07-04",
+              "bookings": 40,
+              "actual": 10.0,
+              "predicted": 11.217119994973165,
+              "base_rate_forecast": 11.009859477873498
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-07-11",
+              "bookings": 55,
+              "actual": 19.0,
+              "predicted": 18.23956300795059,
+              "base_rate_forecast": 15.13855678207606
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-07-18",
+              "bookings": 42,
+              "actual": 12.0,
+              "predicted": 12.349554100552576,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-07-25",
+              "bookings": 46,
+              "actual": 10.0,
+              "predicted": 13.088346995192303,
+              "base_rate_forecast": 12.661338399554523
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-08-01",
+              "bookings": 58,
+              "actual": 14.0,
+              "predicted": 17.31334088929617,
+              "base_rate_forecast": 15.964296242916573
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-08-08",
+              "bookings": 60,
+              "actual": 19.0,
+              "predicted": 19.852662320051355,
+              "base_rate_forecast": 16.514789216810247
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-08-15",
+              "bookings": 40,
+              "actual": 11.0,
+              "predicted": 14.03560300495982,
+              "base_rate_forecast": 11.009859477873498
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-08-22",
+              "bookings": 50,
+              "actual": 18.0,
+              "predicted": 14.680743976173549,
+              "base_rate_forecast": 13.762324347341872
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-08-29",
+              "bookings": 39,
+              "actual": 14.0,
+              "predicted": 9.386442670589618,
+              "base_rate_forecast": 10.73461299092666
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-09-05",
+              "bookings": 34,
+              "actual": 9.0,
+              "predicted": 8.488532099450337,
+              "base_rate_forecast": 9.358380556192474
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-09-12",
+              "bookings": 49,
+              "actual": 7.0,
+              "predicted": 8.249497671231909,
+              "base_rate_forecast": 13.487077860395035
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-09-19",
+              "bookings": 53,
+              "actual": 15.0,
+              "predicted": 12.623312861241844,
+              "base_rate_forecast": 14.588063808182385
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-09-26",
+              "bookings": 34,
+              "actual": 6.0,
+              "predicted": 8.838173241005913,
+              "base_rate_forecast": 9.358380556192474
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-10-03",
+              "bookings": 49,
+              "actual": 12.0,
+              "predicted": 11.662580729161785,
+              "base_rate_forecast": 13.487077860395035
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-10-10",
+              "bookings": 46,
+              "actual": 6.0,
+              "predicted": 7.136190117085945,
+              "base_rate_forecast": 12.661338399554523
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-10-17",
+              "bookings": 54,
+              "actual": 16.0,
+              "predicted": 11.880821215550261,
+              "base_rate_forecast": 14.863310295129223
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-10-24",
+              "bookings": 69,
+              "actual": 20.0,
+              "predicted": 13.022713327746331,
+              "base_rate_forecast": 18.992007599331785
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-10-31",
+              "bookings": 51,
+              "actual": 14.0,
+              "predicted": 12.214743688878944,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-11-07",
+              "bookings": 43,
+              "actual": 10.0,
+              "predicted": 8.039963703654081,
+              "base_rate_forecast": 11.83559893871401
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-11-14",
+              "bookings": 44,
+              "actual": 8.0,
+              "predicted": 6.460889512022588,
+              "base_rate_forecast": 12.110845425660848
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-11-21",
+              "bookings": 43,
+              "actual": 8.0,
+              "predicted": 5.453851330074983,
+              "base_rate_forecast": 11.83559893871401
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-11-28",
+              "bookings": 37,
+              "actual": 3.0,
+              "predicted": 4.453018913256894,
+              "base_rate_forecast": 10.184120017032987
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-12-05",
+              "bookings": 31,
+              "actual": 6.0,
+              "predicted": 5.22887985795681,
+              "base_rate_forecast": 8.532641095351961
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-12-12",
+              "bookings": 38,
+              "actual": 9.0,
+              "predicted": 4.506449062529614,
+              "base_rate_forecast": 10.459366503979822
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-12-19",
+              "bookings": 49,
+              "actual": 11.0,
+              "predicted": 8.86873059660358,
+              "base_rate_forecast": 13.487077860395035
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2016-12-26",
+              "bookings": 44,
+              "actual": 13.0,
+              "predicted": 11.154562371229334,
+              "base_rate_forecast": 12.110845425660848
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-01-02",
+              "bookings": 35,
+              "actual": 8.0,
+              "predicted": 6.305856364126046,
+              "base_rate_forecast": 9.633627043139311
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-01-09",
+              "bookings": 34,
+              "actual": 9.0,
+              "predicted": 4.903912414315495,
+              "base_rate_forecast": 9.358380556192474
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-01-16",
+              "bookings": 39,
+              "actual": 6.0,
+              "predicted": 5.149840181688757,
+              "base_rate_forecast": 10.73461299092666
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-01-23",
+              "bookings": 57,
+              "actual": 7.0,
+              "predicted": 8.361697680158345,
+              "base_rate_forecast": 15.689049755969736
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-01-30",
+              "bookings": 42,
+              "actual": 11.0,
+              "predicted": 5.6749973102154465,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-02-06",
+              "bookings": 57,
+              "actual": 9.0,
+              "predicted": 9.167984246441547,
+              "base_rate_forecast": 15.689049755969736
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-02-13",
+              "bookings": 58,
+              "actual": 15.0,
+              "predicted": 12.169937310835214,
+              "base_rate_forecast": 15.964296242916573
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-02-20",
+              "bookings": 71,
+              "actual": 20.0,
+              "predicted": 13.959891301652553,
+              "base_rate_forecast": 19.54250057322546
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-02-27",
+              "bookings": 52,
+              "actual": 12.0,
+              "predicted": 7.250975639675115,
+              "base_rate_forecast": 14.312817321235547
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-03-06",
+              "bookings": 35,
+              "actual": 8.0,
+              "predicted": 6.200320734444588,
+              "base_rate_forecast": 9.633627043139311
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-03-13",
+              "bookings": 49,
+              "actual": 10.0,
+              "predicted": 10.348299056703885,
+              "base_rate_forecast": 13.487077860395035
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-03-20",
+              "bookings": 23,
+              "actual": 2.0,
+              "predicted": 4.840052525093932,
+              "base_rate_forecast": 6.330669199777262
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-03-27",
+              "bookings": 44,
+              "actual": 8.0,
+              "predicted": 9.753448780898843,
+              "base_rate_forecast": 12.110845425660848
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-04-03",
+              "bookings": 56,
+              "actual": 13.0,
+              "predicted": 13.214638129764696,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-04-10",
+              "bookings": 51,
+              "actual": 22.0,
+              "predicted": 15.184152573389229,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-04-17",
+              "bookings": 51,
+              "actual": 10.0,
+              "predicted": 10.23041382743254,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-04-24",
+              "bookings": 51,
+              "actual": 12.0,
+              "predicted": 11.401521603116057,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-05-01",
+              "bookings": 51,
+              "actual": 14.0,
+              "predicted": 12.108087385229393,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-05-08",
+              "bookings": 55,
+              "actual": 17.0,
+              "predicted": 15.004153466163075,
+              "base_rate_forecast": 15.13855678207606
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-05-15",
+              "bookings": 42,
+              "actual": 6.0,
+              "predicted": 6.824296715884482,
+              "base_rate_forecast": 11.560352451767173
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-05-22",
+              "bookings": 66,
+              "actual": 23.0,
+              "predicted": 15.971236252589469,
+              "base_rate_forecast": 18.166268138491272
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-05-29",
+              "bookings": 57,
+              "actual": 17.0,
+              "predicted": 16.504533416629673,
+              "base_rate_forecast": 15.689049755969736
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-06-05",
+              "bookings": 59,
+              "actual": 15.0,
+              "predicted": 15.05340669887709,
+              "base_rate_forecast": 16.23954272986341
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-06-12",
+              "bookings": 65,
+              "actual": 19.0,
+              "predicted": 18.697578466609272,
+              "base_rate_forecast": 17.891021651544435
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-06-19",
+              "bookings": 52,
+              "actual": 17.0,
+              "predicted": 21.265737349875526,
+              "base_rate_forecast": 14.312817321235547
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-06-26",
+              "bookings": 56,
+              "actual": 16.0,
+              "predicted": 16.093378009558215,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-07-03",
+              "bookings": 46,
+              "actual": 18.0,
+              "predicted": 16.694793289082437,
+              "base_rate_forecast": 12.661338399554523
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-07-10",
+              "bookings": 60,
+              "actual": 16.0,
+              "predicted": 17.854701195579025,
+              "base_rate_forecast": 16.514789216810247
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-07-17",
+              "bookings": 52,
+              "actual": 16.0,
+              "predicted": 14.592795579068714,
+              "base_rate_forecast": 14.312817321235547
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-07-24",
+              "bookings": 52,
+              "actual": 20.0,
+              "predicted": 17.155093968277527,
+              "base_rate_forecast": 14.312817321235547
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-07-31",
+              "bookings": 56,
+              "actual": 24.0,
+              "predicted": 21.018577836712147,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-08-07",
+              "bookings": 51,
+              "actual": 19.0,
+              "predicted": 17.679068650941332,
+              "base_rate_forecast": 14.03757083428871
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-08-14",
+              "bookings": 72,
+              "actual": 21.0,
+              "predicted": 21.6573785251035,
+              "base_rate_forecast": 19.817747060172298
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-08-21",
+              "bookings": 56,
+              "actual": 26.0,
+              "predicted": 17.950290400713584,
+              "base_rate_forecast": 15.413803269022898
+            },
+            {
+              "hotel": "Resort Hotel",
+              "week": "2017-08-28",
+              "bookings": 34,
+              "actual": 9.0,
+              "predicted": 10.94425207700174,
+              "base_rate_forecast": 9.358380556192474
+            }
+          ]
+        }
+      }
+    },
+    "success": {
+      "criterion": "test ROC-AUC >= 0.85 and above every baseline",
+      "roc_auc_target_met": false,
+      "beats_baselines": true,
+      "ci_lower_bound_above_target": false
+    }
+  },
+  "deployment": {
+    "format": "onnx",
+    "model_kb": 6510.8,
+    "model_version": "lgbm-99276044514e",
+    "parity_rows": 200,
+    "parity_max_abs_diff": 1.3374792813547476e-07,
+    "parity_ok": true,
+    "vocabulary_sizes": {
+      "hotel": 2,
+      "meal": 4,
+      "market_segment": 8,
+      "distribution_channel": 5,
+      "reserved_room_type": 9,
+      "deposit_type": 3,
+      "customer_type": 4,
+      "agent_id": 310
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "name": "lgbm",
+  "params": {
+    "num_leaves": 136,
+    "learning_rate": 0.019948930432040424,
+    "n_estimators": 630,
+    "min_child_samples": 7,
+    "subsample": 0.8829843611389542,
+    "colsample_bytree": 0.5929159719177697,
+    "reg_lambda": 0.1407655368983871,
+    "subsample_freq": 1
+  },
+  "strategy": "bayesian, all training rows",
+  "val_roc_auc": 0.8097647555842014,
+  "best_val_roc_auc": 0.8097647555842014,
+  "tied_models": [
+    "lgbm"
+  ],
+  "rule": "best validation ROC-AUC; models within 0.002 of it are tied and the smallest tied model wins",
+  "comparison": [
+    {
+      "model": "logreg",
+      "strategy": "grid",
+      "cv_roc_auc": 0.7729365069265817,
+      "val_roc_auc": 0.7767225081931058,
+      "size_kb": 11.4,
+      "params": {
+        "C": 0.1,
+        "class_weight": null
+      }
+    },
+    {
+      "model": "rf",
+      "strategy": "random",
+      "cv_roc_auc": 0.7818503150391543,
+      "val_roc_auc": 0.8020464698228654,
+      "size_kb": 88321.1,
+      "params": {
+        "max_depth": 20,
+        "max_features": "sqrt",
+        "min_samples_leaf": 8,
+        "n_estimators": 288
+      }
+    },
+    {
+      "model": "lgbm",
+      "strategy": "bayesian, all training rows",
+      "cv_roc_auc": 0.8043245694621417,
+      "val_roc_auc": 0.8097647555842014,
+      "size_kb": 9011.5,
+      "params": {
+        "num_leaves": 136,
+        "learning_rate": 0.019948930432040424,
+        "n_estimators": 630,
+        "min_child_samples": 7,
+        "subsample": 0.8829843611389542,
+        "colsample_bytree": 0.5929159719177697,
+        "reg_lambda": 0.1407655368983871,
+        "subsample_freq": 1
+      }
+    }
+  ]
+}

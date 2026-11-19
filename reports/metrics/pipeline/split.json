@@ -1,0 +1,15 @@
+{
+  "train": {
+    "rows": 61058,
+    "positive_rate": 0.27524648694683745
+  },
+  "validation": {
+    "rows": 13085,
+    "positive_rate": 0.27520061138708446
+  },
+  "test": {
+    "rows": 13085,
+    "positive_rate": 0.27520061138708446
+  },
+  "test_rows_sha256": "4e2bceeeebaa0bdd094da1b7f551e17d60c47f2a0cc7b2b99da881917598d89e"
+}

@@ -1,0 +1,276 @@
+{
+  "permutation": [
+    {
+      "feature": "log_lead_time",
+      "importance_mean": 0.10309516160221197,
+      "importance_std": 0.0018484053655223544
+    },
+    {
+      "feature": "agent_id",
+      "importance_mean": 0.04635243256272472,
+      "importance_std": 0.0012221488791862695
+    },
+    {
+      "feature": "customer_type",
+      "importance_mean": 0.04286133672742607,
+      "importance_std": 0.0015190589468313755
+    },
+    {
+      "feature": "market_segment",
+      "importance_mean": 0.018121978277977215,
+      "importance_std": 0.0005283649921296322
+    },
+    {
+      "feature": "previous_bookings_not_canceled",
+      "importance_mean": 0.016551171818222254,
+      "importance_std": 0.002315318248190589
+    },
+    {
+      "feature": "deposit_type",
+      "importance_mean": 0.013851874174789214,
+      "importance_std": 0.00037504937941372285
+    },
+    {
+      "feature": "prior_cancel_ratio",
+      "importance_mean": 0.012659790598960673,
+      "importance_std": 0.0007624178446719622
+    },
+    {
+      "feature": "adr",
+      "importance_mean": 0.008659519340133537,
+      "importance_std": 0.0008357222287617727
+    },
+    {
+      "feature": "adr_per_person",
+      "importance_mean": 0.006830308395284956,
+      "importance_std": 0.0003661037284270075
+    },
+    {
+      "feature": "total_nights",
+      "importance_mean": 0.006053127259392155,
+      "importance_std": 0.00043945394437139995
+    },
+    {
+      "feature": "arrival_week",
+      "importance_mean": 0.0041647892690194425,
+      "importance_std": 0.0003028641704373949
+    },
+    {
+      "feature": "meal",
+      "importance_mean": 0.004006241646873599,
+      "importance_std": 0.0003407124308146533
+    },
+    {
+      "feature": "is_repeated_guest",
+      "importance_mean": 0.0036037104131648513,
+      "importance_std": 0.0008388863003200524
+    },
+    {
+      "feature": "arrival_weekday",
+      "importance_mean": 0.0028993100351358604,
+      "importance_std": 0.00019712434877779765
+    },
+    {
+      "feature": "previous_cancellations",
+      "importance_mean": 0.002825363895004962,
+      "importance_std": 0.0009391516408867122
+    },
+    {
+      "feature": "month_cos",
+      "importance_mean": 0.002549534309732282,
+      "importance_std": 0.0003820956958768271
+    },
+    {
+      "feature": "stays_in_week_nights",
+      "importance_mean": 0.0023396249530478696,
+      "importance_std": 0.00038268800857078114
+    },
+    {
+      "feature": "reserved_room_type",
+      "importance_mean": 0.002225631241895698,
+      "importance_std": 0.00038252061774981
+    },
+    {
+      "feature": "distribution_channel",
+      "importance_mean": 0.0020833052724118506,
+      "importance_std": 0.00029858155429705473
+    },
+    {
+      "feature": "has_booking_history",
+      "importance_mean": 0.0018375443064867492,
+      "importance_std": 0.000852506739006706
+    },
+    {
+      "feature": "hotel",
+      "importance_mean": 0.0016194772739330122,
+      "importance_std": 0.00037239149653198693
+    },
+    {
+      "feature": "total_guests",
+      "importance_mean": 0.0015438533347090998,
+      "importance_std": 0.0002736770856729323
+    },
+    {
+      "feature": "weekend_share",
+      "importance_mean": 0.001210612568255276,
+      "importance_std": 0.00015983193657655628
+    },
+    {
+      "feature": "children",
+      "importance_mean": 0.0008452622994384651,
+      "importance_std": 0.00011128733317306099
+    },
+    {
+      "feature": "has_company",
+      "importance_mean": 0.0008123885639807372,
+      "importance_std": 0.0002676107498256635
+    },
+    {
+      "feature": "month_sin",
+      "importance_mean": 0.0008054401918206278,
+      "importance_std": 0.0002925396799105171
+    },
+    {
+      "feature": "babies",
+      "importance_mean": 0.0005713271923738272,
+      "importance_std": 7.348528885787527e-05
+    },
+    {
+      "feature": "adults",
+      "importance_mean": 0.00044047057550318237,
+      "importance_std": 0.0003210808860831775
+    },
+    {
+      "feature": "stays_in_weekend_nights",
+      "importance_mean": 0.0003849421601454184,
+      "importance_std": 0.00010756251900039776
+    },
+    {
+      "feature": "is_family",
+      "importance_mean": 0.00013363538011543775,
+      "importance_std": 5.093152139380098e-05
+    }
+  ],
+  "shap": [
+    {
+      "feature": "log_lead_time",
+      "mean_abs_shap": 0.50975908282928
+    },
+    {
+      "feature": "agent_id",
+      "mean_abs_shap": 0.295818902798819
+    },
+    {
+      "feature": "customer_type",
+      "mean_abs_shap": 0.22898380368370397
+    },
+    {
+      "feature": "market_segment",
+      "mean_abs_shap": 0.1865956283255229
+    },
+    {
+      "feature": "deposit_type",
+      "mean_abs_shap": 0.13152348012076484
+    },
+    {
+      "feature": "prior_cancel_ratio",
+      "mean_abs_shap": 0.1222225585813015
+    },
+    {
+      "feature": "previous_bookings_not_canceled",
+      "mean_abs_shap": 0.10911611314196798
+    },
+    {
+      "feature": "adr",
+      "mean_abs_shap": 0.08262827264382826
+    },
+    {
+      "feature": "adr_per_person",
+      "mean_abs_shap": 0.07460523268730644
+    },
+    {
+      "feature": "arrival_week",
+      "mean_abs_shap": 0.061642166324440036
+    },
+    {
+      "feature": "total_nights",
+      "mean_abs_shap": 0.054243343932515065
+    },
+    {
+      "feature": "previous_cancellations",
+      "mean_abs_shap": 0.04473937819255452
+    },
+    {
+      "feature": "arrival_weekday",
+      "mean_abs_shap": 0.04462851355535545
+    },
+    {
+      "feature": "hotel",
+      "mean_abs_shap": 0.03545823538043718
+    },
+    {
+      "feature": "month_cos",
+      "mean_abs_shap": 0.03469797210539956
+    },
+    {
+      "feature": "distribution_channel",
+      "mean_abs_shap": 0.03448862853093023
+    },
+    {
+      "feature": "has_booking_history",
+      "mean_abs_shap": 0.030149406455581052
+    },
+    {
+      "feature": "stays_in_week_nights",
+      "mean_abs_shap": 0.028893181764072465
+    },
+    {
+      "feature": "meal",
+      "mean_abs_shap": 0.028491862199973236
+    },
+    {
+      "feature": "month_sin",
+      "mean_abs_shap": 0.027411134194673562
+    },
+    {
+      "feature": "total_guests",
+      "mean_abs_shap": 0.025934230298642592
+    },
+    {
+      "feature": "weekend_share",
+      "mean_abs_shap": 0.02398314551267679
+    },
+    {
+      "feature": "is_repeated_guest",
+      "mean_abs_shap": 0.02210834639789876
+    },
+    {
+      "feature": "reserved_room_type",
+      "mean_abs_shap": 0.02142528552713443
+    },
+    {
+      "feature": "stays_in_weekend_nights",
+      "mean_abs_shap": 0.017186890012094263
+    },
+    {
+      "feature": "has_company",
+      "mean_abs_shap": 0.01682342844308557
+    },
+    {
+      "feature": "children",
+      "mean_abs_shap": 0.014065402993817994
+    },
+    {
+      "feature": "adults",
+      "mean_abs_shap": 0.012745003704172463
+    },
+    {
+      "feature": "babies",
+      "mean_abs_shap": 0.007367642233997727
+    },
+    {
+      "feature": "is_family",
+      "mean_abs_shap": 0.0035763126652446882
+    }
+  ]
+}

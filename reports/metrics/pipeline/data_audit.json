@@ -1,0 +1,17 @@
+{
+  "rows": 119390,
+  "columns": 32,
+  "missing_values": {
+    "children": 4,
+    "country": 488,
+    "agent": 16340,
+    "company": 112593
+  },
+  "exact_duplicate_rows": 31994,
+  "target_rate": 0.37041628277075134,
+  "arrival_years": [
+    2015,
+    2016,
+    2017
+  ]
+}

@@ -1,0 +1,280 @@
+{
+  "evidence": {
+    "required_car_parking_spaces": [
+      {
+        "value": "0",
+        "cancel_rate": 0.3003768141540817,
+        "rows": 67938
+      },
+      {
+        "value": "1",
+        "cancel_rate": 0.0,
+        "rows": 6174
+      },
+      {
+        "value": "2",
+        "cancel_rate": 0.0,
+        "rows": 26
+      },
+      {
+        "value": "3",
+        "cancel_rate": 0.0,
+        "rows": 3
+      },
+      {
+        "value": "8",
+        "cancel_rate": 0.0,
+        "rows": 2
+      }
+    ],
+    "total_of_special_requests": [
+      {
+        "value": "0",
+        "cancel_rate": 0.3317669172932331,
+        "rows": 37240
+      },
+      {
+        "value": "1",
+        "cancel_rate": 0.22461525934370166,
+        "rows": 24562
+      },
+      {
+        "value": "2",
+        "cancel_rate": 0.21486701071853911,
+        "rows": 10076
+      },
+      {
+        "value": "3",
+        "cancel_rate": 0.1723610402855686,
+        "rows": 1961
+      },
+      {
+        "value": "4",
+        "cancel_rate": 0.10948905109489052,
+        "rows": 274
+      },
+      {
+        "value": "5",
+        "cancel_rate": 0.06666666666666667,
+        "rows": 30
+      }
+    ],
+    "country": [
+      {
+        "value": "PRT",
+        "cancel_rate": 0.35639929160727396,
+        "rows": 23151
+      },
+      {
+        "value": "GBR",
+        "cancel_rate": 0.1930397567293614,
+        "rows": 8879
+      },
+      {
+        "value": "FRA",
+        "cancel_rate": 0.19452564443263354,
+        "rows": 7526
+      },
+      {
+        "value": "ESP",
+        "cancel_rate": 0.25703655774830153,
+        "rows": 6182
+      },
+      {
+        "value": "DEU",
+        "cancel_rate": 0.19409465914025184,
+        "rows": 4606
+      },
+      {
+        "value": "ITA",
+        "cancel_rate": 0.35296367112810706,
+        "rows": 2615
+      },
+      {
+        "value": "IRL",
+        "cancel_rate": 0.22335823830121904,
+        "rows": 2543
+      },
+      {
+        "value": "BEL",
+        "cancel_rate": 0.20157657657657657,
+        "rows": 1776
+      },
+      {
+        "value": "BRA",
+        "cancel_rate": 0.36342182890855457,
+        "rows": 1695
+      },
+      {
+        "value": "NLD",
+        "cancel_rate": 0.1834975369458128,
+        "rows": 1624
+      }
+    ],
+    "adr": [
+      {
+        "value": "0-48",
+        "cancel_rate": 0.1488719832109129,
+        "rows": 7624
+      },
+      {
+        "value": "48-65",
+        "cancel_rate": 0.1992507284584432,
+        "rows": 7207
+      },
+      {
+        "value": "65-78",
+        "cancel_rate": 0.2219373988127361,
+        "rows": 7412
+      },
+      {
+        "value": "78-88",
+        "cancel_rate": 0.25835579514824797,
+        "rows": 7420
+      },
+      {
+        "value": "88-99",
+        "cancel_rate": 0.2737663036170499,
+        "rows": 7437
+      },
+      {
+        "value": "99-111",
+        "cancel_rate": 0.3027275182284634,
+        "rows": 7406
+      },
+      {
+        "value": "111-126",
+        "cancel_rate": 0.3223119313084711,
+        "rows": 7803
+      },
+      {
+        "value": "126-144",
+        "cancel_rate": 0.3378605432651918,
+        "rows": 7142
+      },
+      {
+        "value": "144-175",
+        "cancel_rate": 0.3207521273675542,
+        "rows": 7286
+      },
+      {
+        "value": "175-508",
+        "cancel_rate": 0.3687550634620578,
+        "rows": 7406
+      }
+    ]
+  },
+  "ablation": {
+    "ladder": [
+      {
+        "step": "Base features only",
+        "sources": [
+          "base"
+        ],
+        "val_roc_auc": 0.8024693454686131
+      },
+      {
+        "step": "Deployed (base + kept Tier 3)",
+        "sources": [
+          "base",
+          "adr"
+        ],
+        "val_roc_auc": 0.8046527389235687
+      },
+      {
+        "step": "+ all Tier 3 (timing uncertain)",
+        "sources": [
+          "base",
+          "adr",
+          "required_car_parking_spaces",
+          "total_of_special_requests",
+          "country"
+        ],
+        "val_roc_auc": 0.9097711417619012
+      },
+      {
+        "step": "+ Tier 2 (known after booking)",
+        "sources": [
+          "base",
+          "adr",
+          "required_car_parking_spaces",
+          "total_of_special_requests",
+          "country",
+          "tier2"
+        ],
+        "val_roc_auc": 0.919655267041783
+      },
+      {
+        "step": "+ Tier 1 (the outcome itself)",
+        "sources": [
+          "base",
+          "adr",
+          "required_car_parking_spaces",
+          "total_of_special_requests",
+          "country",
+          "tier2",
+          "tier1"
+        ],
+        "val_roc_auc": 1.0
+      }
+    ],
+    "tier3_single": [
+      {
+        "column": "adr",
+        "decision": "keep",
+        "val_roc_auc": 0.8046527389235687,
+        "gain_over_base": 0.002183393454955551
+      },
+      {
+        "column": "required_car_parking_spaces",
+        "decision": "exclude",
+        "val_roc_auc": 0.8276506648945048,
+        "gain_over_base": 0.025181319425891635
+      },
+      {
+        "column": "total_of_special_requests",
+        "decision": "exclude",
+        "val_roc_auc": 0.8313584398447827,
+        "gain_over_base": 0.0288890943761696
+      },
+      {
+        "column": "country",
+        "decision": "exclude",
+        "val_roc_auc": 0.8711933139618301,
+        "gain_over_base": 0.06872396849321694
+      }
+    ]
+  },
+  "dedup": {
+    "val_roc_auc_deduplicated": 0.8046527389235687,
+    "val_roc_auc_duplicates_kept": 0.8888672782958245,
+    "inflation": 0.08421453937225576,
+    "share_of_val_rows_also_in_train_when_kept": 0.30757185997092046
+  },
+  "duplicates": {
+    "rows": 95910,
+    "repeats": 3,
+    "roc_auc_random_split": 0.8903096469487979,
+    "roc_auc_grouped_split": 0.857725532144782,
+    "roc_auc_grouped_one_per_record": 0.7997569356929962,
+    "roc_auc_grouped_without_non_refundable": 0.7945971772642114,
+    "memorisation": 0.03258411480401591,
+    "population": 0.05796859645178576,
+    "rows_with_copies": {
+      "rows": 30223,
+      "cancel_rate": 0.6311087582304867,
+      "share_groups_segment": 0.404923402706548,
+      "share_non_refundable": 0.38867749727029083
+    },
+    "rows_without_copies": {
+      "rows": 65687,
+      "cancel_rate": 0.2653340843698144,
+      "share_groups_segment": 0.03236561267830773,
+      "share_non_refundable": 0.0032578744652671
+    },
+    "non_refundable": {
+      "rows": 11961,
+      "cancel_rate": 0.9962377727614747
+    }
+  }
+}

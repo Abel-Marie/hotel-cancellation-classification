@@ -1,0 +1,74 @@
+{
+  "encodings": [
+    {
+      "encoding": "ordinal (deployed)",
+      "cv_roc_auc_mean": 0.7725835994959008,
+      "cv_roc_auc_std": 0.006731657512987532,
+      "cv_pr_auc_mean": 0.5845978082333946,
+      "model_columns": 30,
+      "fit_seconds_per_fold": 3.0848634243011475
+    },
+    {
+      "encoding": "one-hot",
+      "cv_roc_auc_mean": 0.7751985689774074,
+      "cv_roc_auc_std": 0.004288514281569883,
+      "cv_pr_auc_mean": 0.5910098726527876,
+      "model_columns": 89,
+      "fit_seconds_per_fold": 2.4808236757914224
+    },
+    {
+      "encoding": "target encoding",
+      "cv_roc_auc_mean": 0.7775584448916572,
+      "cv_roc_auc_std": 0.004032135983986516,
+      "cv_pr_auc_mean": 0.5937446924528662,
+      "model_columns": 30,
+      "fit_seconds_per_fold": 2.0943755308787027
+    }
+  ],
+  "imbalance": [
+    {
+      "method": "none",
+      "val_roc_auc": 0.7879467937991357,
+      "val_pr_auc": 0.6112982220654679,
+      "val_brier": 0.15517836744533775,
+      "mean_predicted_probability": 0.26621462158427084,
+      "actual_rate": 0.27520061138708446
+    },
+    {
+      "method": "class weights",
+      "val_roc_auc": 0.7877758808269553,
+      "val_pr_auc": 0.6097644862379694,
+      "val_brier": 0.17343816177985505,
+      "mean_predicted_probability": 0.38216959305450077,
+      "actual_rate": 0.27520061138708446
+    },
+    {
+      "method": "SMOTENC oversampling",
+      "val_roc_auc": 0.7851047690370464,
+      "val_pr_auc": 0.6039714811197603,
+      "val_brier": 0.15737982368107803,
+      "mean_predicted_probability": 0.2869784645894513,
+      "actual_rate": 0.27520061138708446
+    }
+  ],
+  "feature_additions": [
+    {
+      "features": "deployed features",
+      "columns": 30,
+      "cv_roc_auc_mean": 0.798594462493292,
+      "cv_roc_auc_std": 0.0014998242417137504,
+      "gain_mean": 0.0,
+      "gain_min": 0.0,
+      "gain_max": 0.0
+    },
+    {
+      "features": "deployed + candidate features",
+      "columns": 38,
+      "cv_roc_auc_mean": 0.8003141147356524,
+      "cv_roc_auc_std": 0.003015131631515652,
+      "gain_mean": 0.001719652242360444,
+      "gain_min": -0.0003721249674752958,
+      "gain_max": 0.003298132311859492
+    }
+  ]
+}

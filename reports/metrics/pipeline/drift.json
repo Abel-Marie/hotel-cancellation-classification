@@ -1,0 +1,242 @@
+[
+  {
+    "feature": "month_sin",
+    "type": "numeric",
+    "psi": 5.194793220451856,
+    "level": "large",
+    "ks_statistic": 0.4260738182603065,
+    "ks_pvalue": 0.0
+  },
+  {
+    "feature": "arrival_week",
+    "type": "numeric",
+    "psi": 4.294489538257602,
+    "level": "large",
+    "ks_statistic": 0.4300913259881253,
+    "ks_pvalue": 0.0
+  },
+  {
+    "feature": "month_cos",
+    "type": "numeric",
+    "psi": 1.57704110535465,
+    "level": "large",
+    "ks_statistic": 0.12988834416860157,
+    "ks_pvalue": 5.134931611916349e-297
+  },
+  {
+    "feature": "agent_id",
+    "type": "categorical",
+    "psi": 0.579032645479104,
+    "level": "large",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "adr",
+    "type": "numeric",
+    "psi": 0.14030518155072902,
+    "level": "moderate",
+    "ks_statistic": 0.16764472171391248,
+    "ks_pvalue": 0.0
+  },
+  {
+    "feature": "adr_per_person",
+    "type": "numeric",
+    "psi": 0.11345134450779305,
+    "level": "moderate",
+    "ks_statistic": 0.1476482844313316,
+    "ks_pvalue": 0.0
+  },
+  {
+    "feature": "log_lead_time",
+    "type": "numeric",
+    "psi": 0.06644343715550677,
+    "level": "stable",
+    "ks_statistic": 0.11241429744457121,
+    "ks_pvalue": 2.2450399493317733e-222
+  },
+  {
+    "feature": "market_segment",
+    "type": "categorical",
+    "psi": 0.052876605868915835,
+    "level": "stable",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "customer_type",
+    "type": "categorical",
+    "psi": 0.050905179533228984,
+    "level": "stable",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "meal",
+    "type": "categorical",
+    "psi": 0.03628465602248882,
+    "level": "stable",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "reserved_room_type",
+    "type": "categorical",
+    "psi": 0.02280322195801309,
+    "level": "stable",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "total_nights",
+    "type": "numeric",
+    "psi": 0.014398282799287341,
+    "level": "stable",
+    "ks_statistic": 0.046563055813122256,
+    "ks_pvalue": 2.0062189259761154e-38
+  },
+  {
+    "feature": "total_guests",
+    "type": "numeric",
+    "psi": 0.012304074584006924,
+    "level": "stable",
+    "ks_statistic": 0.03290851073771861,
+    "ks_pvalue": 2.1017375292069824e-19
+  },
+  {
+    "feature": "distribution_channel",
+    "type": "categorical",
+    "psi": 0.007968702714540055,
+    "level": "stable",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "stays_in_week_nights",
+    "type": "numeric",
+    "psi": 0.0072346152943903,
+    "level": "stable",
+    "ks_statistic": 0.03714044885490281,
+    "ks_pvalue": 1.3408193469303103e-24
+  },
+  {
+    "feature": "adults",
+    "type": "numeric",
+    "psi": 0.006673828007066793,
+    "level": "stable",
+    "ks_statistic": 0.0314465287783392,
+    "ks_pvalue": 9.361383842958996e-18
+  },
+  {
+    "feature": "hotel",
+    "type": "categorical",
+    "psi": 0.005779606430898662,
+    "level": "stable",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "weekend_share",
+    "type": "numeric",
+    "psi": 0.0024329986581344103,
+    "level": "stable",
+    "ks_statistic": 0.020360733531664177,
+    "ks_pvalue": 1.0837685221881066e-07
+  },
+  {
+    "feature": "stays_in_weekend_nights",
+    "type": "numeric",
+    "psi": 0.0017840564528475232,
+    "level": "stable",
+    "ks_statistic": 0.01963806388402961,
+    "ks_pvalue": 3.4787226043471245e-07
+  },
+  {
+    "feature": "arrival_weekday",
+    "type": "numeric",
+    "psi": 0.001144372153964119,
+    "level": "stable",
+    "ks_statistic": 0.011652607948454463,
+    "ks_pvalue": 0.008314290697221791
+  },
+  {
+    "feature": "deposit_type",
+    "type": "categorical",
+    "psi": 0.0009043434155535043,
+    "level": "stable",
+    "ks_statistic": null,
+    "ks_pvalue": null
+  },
+  {
+    "feature": "children",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.02062951358057774,
+    "ks_pvalue": 6.948529757691853e-08
+  },
+  {
+    "feature": "is_family",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.017009280369839175,
+    "ks_pvalue": 1.696091059985567e-05
+  },
+  {
+    "feature": "babies",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.00369271307059027,
+    "ks_pvalue": 0.9452647089716542
+  },
+  {
+    "feature": "is_repeated_guest",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.006421059156339282,
+    "ks_pvalue": 0.37517494916795924
+  },
+  {
+    "feature": "previous_cancellations",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.016695062231417812,
+    "ks_pvalue": 2.600271202647329e-05
+  },
+  {
+    "feature": "has_booking_history",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.012627606040586992,
+    "ks_pvalue": 0.0031986356361521713
+  },
+  {
+    "feature": "previous_bookings_not_canceled",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.006068963433467189,
+    "ks_pvalue": 0.44593573169536227
+  },
+  {
+    "feature": "has_company",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.008388626008945299,
+    "ks_pvalue": 0.11647522723504156
+  },
+  {
+    "feature": "prior_cancel_ratio",
+    "type": "numeric",
+    "psi": 0.0,
+    "level": "stable",
+    "ks_statistic": 0.019405134822092274,
+    "ks_pvalue": 5.020747251780292e-07
+  }
+]

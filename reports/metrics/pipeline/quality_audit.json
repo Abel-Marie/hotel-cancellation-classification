@@ -1,0 +1,180 @@
+{
+  "inconsistencies": [
+    {
+      "check": "Booking for zero guests",
+      "rows": 180,
+      "share": 0.001507663958455482,
+      "action": "removed",
+      "why": "A booking for nobody is a data-entry error."
+    },
+    {
+      "check": "Negative price per night",
+      "rows": 1,
+      "share": 8.375910880308233e-06,
+      "action": "removed",
+      "why": "Impossible."
+    },
+    {
+      "check": "Price above 1000 per night",
+      "rows": 1,
+      "share": 8.375910880308233e-06,
+      "action": "removed",
+      "why": "A single row, far above every other price in the data."
+    },
+    {
+      "check": "Meal code 'Undefined'",
+      "rows": 1169,
+      "share": 0.009791439819080325,
+      "action": "merged into SC",
+      "why": "The dataset paper says both codes mean no meal package."
+    },
+    {
+      "check": "Children count missing",
+      "rows": 4,
+      "share": 3.350364352123293e-05,
+      "action": "set to 0",
+      "why": "Missing means none."
+    },
+    {
+      "check": "Country missing",
+      "rows": 488,
+      "share": 0.004087444509590418,
+      "action": "own category",
+      "why": "Country is not a deployed feature; it is used only in the leakage audit."
+    },
+    {
+      "check": "Zero nights booked",
+      "rows": 715,
+      "share": 0.005988776279420387,
+      "action": "kept",
+      "why": "Day-use rooms and same-day departures exist in hotels."
+    },
+    {
+      "check": "Price of exactly 0",
+      "rows": 1959,
+      "share": 0.01640840941452383,
+      "action": "kept",
+      "why": "Complimentary stays and staff bookings are real."
+    },
+    {
+      "check": "No adults, only children or babies",
+      "rows": 223,
+      "share": 0.001867828126308736,
+      "action": "kept",
+      "why": "Usually an extra room attached to a family booking."
+    },
+    {
+      "check": "Market segment or channel 'Undefined'",
+      "rows": 5,
+      "share": 4.1879554401541165e-05,
+      "action": "kept",
+      "why": "A handful of rows; the encoder groups rare categories together."
+    },
+    {
+      "check": "Not flagged as repeated guest, but has earlier bookings",
+      "rows": 6237,
+      "share": 0.052240556160482454,
+      "action": "kept",
+      "why": "The two fields are recorded separately; the model sees both."
+    },
+    {
+      "check": "Flagged as repeated guest, but no earlier bookings",
+      "rows": 590,
+      "share": 0.004941787419381858,
+      "action": "kept",
+      "why": "Same reason."
+    }
+  ],
+  "outliers": [
+    {
+      "column": "lead_time",
+      "median": 69.0,
+      "p99": 444.0,
+      "max": 737.0,
+      "upper_fence": 373.0,
+      "rows_above_fence": 3005,
+      "share_above_fence": 0.025169612195326242,
+      "decision": "kept: bookings a year or more ahead are real (groups, events); the model uses log(1 + lead time)"
+    },
+    {
+      "column": "adr",
+      "median": 94.575,
+      "p99": 252.0,
+      "max": 5400.0,
+      "upper_fence": 211.065,
+      "rows_above_fence": 3793,
+      "share_above_fence": 0.03176982996900913,
+      "decision": "kept up to 1000; the single value above it is removed"
+    },
+    {
+      "column": "stays_in_week_nights",
+      "median": 2.0,
+      "p99": 10.0,
+      "max": 50.0,
+      "upper_fence": 6.0,
+      "rows_above_fence": 3354,
+      "share_above_fence": 0.028092805092553814,
+      "decision": "kept: long stays are real"
+    },
+    {
+      "column": "stays_in_weekend_nights",
+      "median": 1.0,
+      "p99": 4.0,
+      "max": 19.0,
+      "upper_fence": 5.0,
+      "rows_above_fence": 265,
+      "share_above_fence": 0.0022196163832816818,
+      "decision": "kept: long stays are real"
+    },
+    {
+      "column": "adults",
+      "median": 2.0,
+      "p99": 3.0,
+      "max": 55.0,
+      "upper_fence": 2.0,
+      "rows_above_fence": 6280,
+      "share_above_fence": 0.05260072032833571,
+      "decision": "kept: large parties are group bookings"
+    },
+    {
+      "column": "children",
+      "median": 0.0,
+      "p99": 2.0,
+      "max": 10.0,
+      "upper_fence": 0.0,
+      "rows_above_fence": 8590,
+      "share_above_fence": 0.07195148509875529,
+      "decision": "kept"
+    },
+    {
+      "column": "babies",
+      "median": 0.0,
+      "p99": 0.0,
+      "max": 10.0,
+      "upper_fence": 0.0,
+      "rows_above_fence": 917,
+      "share_above_fence": 0.00768071027724265,
+      "decision": "kept"
+    },
+    {
+      "column": "previous_cancellations",
+      "median": 0.0,
+      "p99": 1.0,
+      "max": 26.0,
+      "upper_fence": 0.0,
+      "rows_above_fence": 6484,
+      "share_above_fence": 0.054309406147918585,
+      "decision": "kept: a strong, legitimate signal"
+    },
+    {
+      "column": "previous_bookings_not_canceled",
+      "median": 0.0,
+      "p99": 3.0,
+      "max": 72.0,
+      "upper_fence": 0.0,
+      "rows_above_fence": 3620,
+      "share_above_fence": 0.030320797386715805,
+      "decision": "kept: a strong, legitimate signal"
+    }
+  ]
+}

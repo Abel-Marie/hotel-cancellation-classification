@@ -1,0 +1,57 @@
+{
+  "fit_years": "<= 2016",
+  "eval_year": 2017,
+  "fit_rows": 47276,
+  "eval_rows": 26867,
+  "eval_roc_auc": 0.7635129860867442,
+  "by_month": [
+    {
+      "month": "January",
+      "rows": 2414,
+      "cancel_rate": 0.2609776304888152,
+      "roc_auc": 0.8211416292974589
+    },
+    {
+      "month": "February",
+      "rows": 2774,
+      "cancel_rate": 0.2671232876712329,
+      "roc_auc": 0.7868469842736548
+    },
+    {
+      "month": "March",
+      "rows": 3135,
+      "cancel_rate": 0.2535885167464115,
+      "roc_auc": 0.7708619577487501
+    },
+    {
+      "month": "April",
+      "rows": 3526,
+      "cancel_rate": 0.3369256948383437,
+      "roc_auc": 0.7679311290838238
+    },
+    {
+      "month": "May",
+      "rows": 3879,
+      "cancel_rate": 0.3248259860788863,
+      "roc_auc": 0.7660727164736328
+    },
+    {
+      "month": "June",
+      "rows": 3575,
+      "cancel_rate": 0.3437762237762238,
+      "roc_auc": 0.7257525750598113
+    },
+    {
+      "month": "July",
+      "rows": 3858,
+      "cancel_rate": 0.36106791083462936,
+      "roc_auc": 0.7230483044023361
+    },
+    {
+      "month": "August",
+      "rows": 3706,
+      "cancel_rate": 0.36562331354560174,
+      "roc_auc": 0.7577243569117955
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "url": "http://127.0.0.1:8765",
+  "checked_utc": "2026-11-18T00:32:51Z",
+  "model_version": "lgbm-99276044514e",
+  "feedback_storage": "this instance only",
+  "parity_rows": 100,
+  "parity_max_abs_diff": 5.991363525303939e-07,
+  "checks": [
+    {
+      "check": "demo page loads",
+      "ok": true,
+      "detail": "GET / -> 200"
+    },
+    {
+      "check": "API documentation loads",
+      "ok": true,
+      "detail": "GET /docs -> 200"
+    },
+    {
+      "check": "health",
+      "ok": true,
+      "detail": "GET /health -> 200 {'status': 'ok', 'model_version': 'lgbm-99276044514e', 'model_self_check': 'ok', 'feedback_storage': 'this instance only', 'uptime_s': 1642.3}"
+    },
+    {
+      "check": "serves the exported model",
+      "ok": true,
+      "detail": "live lgbm-99276044514e, exported lgbm-99276044514e"
+    },
+    {
+      "check": "model card",
+      "ok": true,
+      "detail": "threshold 0.63, test metrics match the export"
+    },
+    {
+      "check": "prediction",
+      "ok": true,
+      "detail": "example booking -> 0.44408"
+    },
+    {
+      "check": "batch of 100 real bookings agrees with the exported model",
+      "ok": true,
+      "detail": "largest difference 6.0e-07 (limit 1e-4)"
+    },
+    {
+      "check": "feedback accepted",
+      "ok": true,
+      "detail": "stored: this instance only"
+    },
+    {
+      "check": "feedback summary",
+      "ok": true,
+      "detail": "61 record(s), storage: this instance only"
+    },
+    {
+      "check": "bad input: malformed JSON",
+      "ok": true,
+      "detail": "422: The request was not accepted: the request body is not valid JSON (Expecting property name enclosed in double q"
+    },
+    {
+      "check": "bad input: empty body",
+      "ok": true,
+      "detail": "422: The request was not accepted: the request body is empty: send a JSON object."
+    },
+    {
+      "check": "bad input: wrong content type",
+      "ok": true,
+      "detail": "415: This endpoint reads JSON. Send the body with the header Content-Type: application/json (this request had \"text"
+    },
+    {
+      "check": "bad input: missing fields",
+      "ok": true,
+      "detail": "422: The request was not accepted: 12 problems found. The first: lead_time is required but missing."
+    },
+    {
+      "check": "bad input: negative lead time",
+      "ok": true,
+      "detail": "422: The request was not accepted: lead_time must be at least 0 (got -5)."
+    },
+    {
+      "check": "bad input: impossible date",
+      "ok": true,
+      "detail": "422: The request was not accepted: arrival_date must be a real calendar date written as YYYY-MM-DD (got \"2026-02-30"
+    },
+    {
+      "check": "bad input: zero guests",
+      "ok": true,
+      "detail": "422: The request was not accepted: adults plus children plus babies must be at least 1: a booking needs a guest."
+    },
+    {
+      "check": "bad input: excluded column sent",
+      "ok": true,
+      "detail": "422: The request was not accepted: country is deliberately not used: it is not reliably known when a booking is mad"
+    },
+    {
+      "check": "bad input: text where a number belongs",
+      "ok": true,
+      "detail": "422: The request was not accepted: adr must be a number (got \"cheap\")."
+    },
+    {
+      "check": "bad input: batch of 101",
+      "ok": true,
+      "detail": "422"
+    },
+    {
+      "check": "unknown path",
+      "ok": true,
+      "detail": "404"
+    },
+    {
+      "check": "wrong method",
+      "ok": true,
+      "detail": "405"
+    },
+    {
+      "check": "unknown agent is scored and reported",
+      "ok": true,
+      "detail": "200: unseen_categories=['agent_id']"
+    }
+  ],
+  "passed": 22,
+  "failed": 0,
+  "configured_url": ""
+}

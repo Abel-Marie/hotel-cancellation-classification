@@ -1,0 +1,71 @@
+{
+  "cleaning_log": [
+    {
+      "rule": "drop_exact_duplicates",
+      "rows_before": 119390,
+      "rows_after": 87396,
+      "rows_removed": 31994,
+      "values_changed": null,
+      "why": "Identical rows would land in both train and test and inflate scores."
+    },
+    {
+      "rule": "drop_zero_guests",
+      "rows_before": 87396,
+      "rows_after": 87230,
+      "rows_removed": 166,
+      "values_changed": null,
+      "why": "A booking for nobody is a data-entry error."
+    },
+    {
+      "rule": "drop_negative_price",
+      "rows_before": 87230,
+      "rows_after": 87229,
+      "rows_removed": 1,
+      "values_changed": null,
+      "why": "A negative nightly rate is impossible."
+    },
+    {
+      "rule": "drop_extreme_price",
+      "rows_before": 87229,
+      "rows_after": 87228,
+      "rows_removed": 1,
+      "values_changed": null,
+      "why": "Rates above 1000 per night are entry errors in this data."
+    },
+    {
+      "rule": "fill_children_missing_as_zero",
+      "rows_before": 87228,
+      "rows_after": 87228,
+      "rows_removed": 0,
+      "values_changed": 4,
+      "why": "Missing children count means none."
+    },
+    {
+      "rule": "fill_country_missing_as_UNK",
+      "rows_before": 87228,
+      "rows_after": 87228,
+      "rows_removed": 0,
+      "values_changed": 447,
+      "why": "Kept as its own category."
+    },
+    {
+      "rule": "merge_meal_undefined_into_SC",
+      "rows_before": 87228,
+      "rows_after": 87228,
+      "rows_removed": 0,
+      "values_changed": 492,
+      "why": "Dataset paper: both codes mean no meal package."
+    },
+    {
+      "rule": "keep_agent_company_missing",
+      "rows_before": 87228,
+      "rows_after": 87228,
+      "rows_removed": 0,
+      "values_changed": 0,
+      "why": "Missing agent or company means the booking had none; handled as a feature."
+    }
+  ],
+  "rows_after_cleaning": 87228,
+  "rows_used": 87228,
+  "duplicate_rows_cancel_rate": 0.6313371257110708
+}
