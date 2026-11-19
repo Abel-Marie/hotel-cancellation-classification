@@ -1,0 +1,171 @@
+# Every tunable setting for the project lives here. Code reads it through
+# hotel_cancellation.config.load_config(); nothing below is repeated in code.
+
+project: hotel-cancellation-classification
+seed: 42
+
+data:
+  name: Hotel Booking Demand
+  citation: >-
+    Antonio, N., de Almeida, A., & Nunes, L. (2019). Hotel booking demand
+    datasets. Data in Brief, 22, 41-49. https://doi.org/10.1016/j.dib.2018.11.126
+  license: CC BY 4.0
+  # The same file from the TidyTuesday repository, pinned to the commit that added it. The CDN copy is
+  # tried first because raw.githubusercontent.com is throttled on some networks; either way the
+  # SHA-256 below must match, so it is provably the same file.
+  sources:
+    - https://cdn.jsdelivr.net/gh/rfordatascience/tidytuesday@d75aaa0d31596ad6487ae0db20138067d301e031/data/2020/2020-02-11/hotels.csv
+    - https://raw.githubusercontent.com/rfordatascience/tidytuesday/d75aaa0d31596ad6487ae0db20138067d301e031/data/2020/2020-02-11/hotels.csv
+  mirror_path: data/mirror/hotels.csv.gz   # compressed copy shipped in the repo
+  mirror_url: ""                            # optional: raw GitHub URL of the mirror once pushed
+  sha256: 7c2ae42a7353905ea136e5c2287f17c92c5435826598bfbb8491c6f0c7b1fc06
+  expected_rows: 119390
+  expected_columns: 32
+
+target: is_canceled
+
+cleaning:
+  drop_duplicates: true
+  max_valid_adr: 1000.0          # domain limit, not learned from data
+  fill_meal_undefined_as: SC     # dataset paper: "Undefined" and "SC" both mean no meal package
+
+split:
+  val_size: 0.15
+  test_size: 0.15
+  temporal_train_until_year: 2016   # robustness check on train+validation rows only
+
+features:
+  min_category_frequency: 30        # rarer categories are grouped; learned on training data only
+  # Feature groups produced by rowlevel.py, named after the raw column(s) they come from.
+  safe_sources: [base]
+  tier3_sources: [adr, required_car_parking_spaces, total_of_special_requests, country]
+  # Extra booking-time features tested in Section 5 and not adopted (the gain is within fold noise).
+  candidate_sources: [candidate]
+  tier2_sources: [tier2]
+  tier1_sources: [tier1]
+
+leakage:
+  tier1_columns: [reservation_status, reservation_status_date]
+  tier2_columns: [assigned_room_type, booking_changes, days_in_waiting_list]
+  never_columns: [arrival_date_year]
+  # Decisions for timing-uncertain columns. The notebook shows the evidence for each.
+  tier3_decisions:
+    adr:
+      decision: keep
+      reason: >-
+        The price is agreed when the room is booked. It can change later, but the
+        cancellation rate by price band changes smoothly, with no value that only
+        guests who arrived would have.
+    required_car_parking_spaces:
+      decision: exclude
+      reason: >-
+        Every booking with a parking space has a cancellation rate of exactly zero.
+        Parking is recorded at check-in, so the value encodes the outcome.
+    total_of_special_requests:
+      decision: exclude
+      reason: >-
+        Requests can be added at any time up to check-in, and guests who cancel
+        never reach that point. The timing cannot be established, so the rule
+        "when in doubt, exclude" applies.
+    country:
+      decision: exclude
+      reason: >-
+        Nationality is usually confirmed at check-in. Cancelled bookings keep the
+        value entered at booking, which tends to default to the hotels' home
+        country, so Portugal shows an implausibly high cancellation rate.
+
+costs:
+  # Cost of each wrong decision, in room-nights. Relocating an overbooked guest
+  # who does arrive (false positive) costs more than one empty room (false negative).
+  false_negative: 1.0
+  false_positive: 2.0
+
+risk_bands:          # calibrated-probability cut-offs for the label shown in the demo
+  low: 0.30
+  high: 0.70
+
+models:
+  n_jobs: 4
+
+tuning:
+  subsample_rows: 20000
+  cv_folds: 3
+  logreg_grid:
+    C: [0.01, 0.1, 1.0, 10.0]
+    class_weight: [null, balanced]
+  rf_random_iterations: 20
+  # The same budget goes to all three strategies on LightGBM, so the comparison
+  # between Grid, Random and Bayesian search is fair.
+  lgbm_budget: 24
+  lgbm_grid:
+    num_leaves: [31, 63, 127]
+    learning_rate: [0.03, 0.1]
+    n_estimators: [200, 400, 600, 800]
+  # Second stage: Bayesian search on ALL training rows, started from LightGBM's defaults and from
+  # the best setting of each subsample search. Settings found on a 20,000-row sample do not
+  # transfer to 61,000 rows (the first champion scored below the untuned default on validation).
+  refine_trials: 24
+
+diagnostics:
+  learning_curve_sizes: [0.1, 0.25, 0.5, 0.75, 1.0]
+  validation_curve_num_leaves: [8, 16, 32, 64, 128, 256]
+
+evaluation:
+  bootstrap_samples: 1000
+  calibration_folds: 5
+  calibration_min_brier_gain: 0.0005
+  # False-alarm costs (missed cancellation fixed at 1) for the sensitivity table: how the threshold,
+  # precision and recall move when the hotel's action is cheaper or dearer than relocating a guest.
+  cost_sensitivity_false_positive: [0.2, 0.5, 1.0, 2.0, 3.0]
+
+explain:
+  permutation_repeats: 5
+  shap_rows: 2000
+
+success:
+  roc_auc: 0.85
+
+service:
+  # Base URL of the deployed API. The notebooks call it for the live checks (Sections 8.3 and 10);
+  # the SERVICE_URL environment variable overrides it. Empty means not deployed.
+  url: ""
+
+selection:
+  # Models within this validation ROC-AUC of the best are treated as tied (the difference is below
+  # run-to-run noise), and the smallest of them is chosen: it deploys and scores faster.
+  tie_tolerance: 0.002
+
+# Models scored on the test set, fixed before the test pass.
+test_pass_models: [dummy, logreg, champion]
+
+# The test set has been scored twice. This block is the record of the first time; the archived
+# results file is reports/metrics/history/2026-11-10_first_test_evaluation.json and a unit test
+# checks that the numbers below match it.
+first_test_evaluation:
+  date: "2026-11-10"
+  champion: LightGBM tuned by Bayesian search on a 20,000-row training subsample
+  validation_roc_auc: 0.8017
+  roc_auc: 0.7974
+  roc_auc_ci: [0.7887, 0.8049]
+  pr_auc: 0.6206
+  threshold: 0.61
+  precision: 0.8247
+  recall: 0.1633
+  f1: 0.2726
+  what_changed_afterwards: >-
+    Only the champion's hyperparameters. The first champion scored lower on validation than
+    LightGBM with default settings, because settings found on a 20,000-row subsample do not
+    transfer to the full training set. A second search stage on all training rows was added.
+    The data, the split, the features, the leakage decisions, the costs and the success criterion
+    are unchanged, and the change was decided on validation data before the test set was scored again.
+
+fast:   # ML_FAST=1 or --fast: tiny budgets for tests and CI; never used for reported results
+  sample_rows: 8000
+  subsample_rows: 3000
+  cv_folds: 2
+  rf_random_iterations: 3
+  lgbm_budget: 4
+  refine_trials: 3
+  bootstrap_samples: 50
+  permutation_repeats: 2
+  shap_rows: 200
