@@ -1070,7 +1070,7 @@ say(f"ONNX model: **{deployment['model_kb']:,} KB**, version `{deployment['model
 # ### 8.3 The deployed API
 #
 # The FastAPI service in the repository's `service/` folder is built for Vercel's free tier (a serverless
-# cloud platform); its address, once deployed, is the `service.url` setting in the configuration and is
+# cloud platform); its address is the `service.url` setting in the configuration and is
 # printed below. It runs the shared feature code, the ONNX model and the calibration, and returns the
 # probability, a yes/no decision at the chosen threshold and a risk band. Interactive documentation is at
 # `/docs` and a demo page at `/`.

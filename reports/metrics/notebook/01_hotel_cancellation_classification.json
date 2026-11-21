@@ -264,8 +264,8 @@
       "val_recall_at_0_5": 0.3679533462926965,
       "val_f1_at_0_5": 0.4742304939155333,
       "val_brier": 0.14933972340084226,
-      "fit_seconds": 1.96,
-      "predict_ms_per_1k_rows": 12.94,
+      "fit_seconds": 3.4,
+      "predict_ms_per_1k_rows": 27.03,
       "size_kb": 2672.0,
       "notes": "Gradient boosting in LightGBM; usually the strongest on tabular data. Explained with SHAP."
     },
@@ -281,8 +281,8 @@
       "val_recall_at_0_5": 0.3665648430991391,
       "val_f1_at_0_5": 0.47261009667024706,
       "val_brier": 0.15004625295348692,
-      "fit_seconds": 5.95,
-      "predict_ms_per_1k_rows": 17.94,
+      "fit_seconds": 13.41,
+      "predict_ms_per_1k_rows": 25.07,
       "size_kb": 123461.8,
       "notes": "Averages many trees; robust, but large to store and slower to score."
     },
@@ -298,8 +298,8 @@
       "val_recall_at_0_5": 0.3276867536795335,
       "val_f1_at_0_5": 0.44203034276081665,
       "val_brier": 0.1521068929489373,
-      "fit_seconds": 2.44,
-      "predict_ms_per_1k_rows": 5.0,
+      "fit_seconds": 6.57,
+      "predict_ms_per_1k_rows": 16.22,
       "size_kb": 370.9,
       "notes": "Gradient boosting in scikit-learn; strong and fast on tabular data."
     },
@@ -315,8 +315,8 @@
       "val_recall_at_0_5": 0.3965565120799778,
       "val_f1_at_0_5": 0.48357602438198444,
       "val_brier": 0.1540345031872526,
-      "fit_seconds": 14.58,
-      "predict_ms_per_1k_rows": 4.7,
+      "fit_seconds": 29.89,
+      "predict_ms_per_1k_rows": 6.34,
       "size_kb": 296.5,
       "notes": "Small neural network; needs scaling, hardest to interpret."
     },
@@ -332,8 +332,8 @@
       "val_recall_at_0_5": 0.3262982504859761,
       "val_f1_at_0_5": 0.4318265343623668,
       "val_brier": 0.15746123478181828,
-      "fit_seconds": 4.54,
-      "predict_ms_per_1k_rows": 4.43,
+      "fit_seconds": 3.88,
+      "predict_ms_per_1k_rows": 4.7,
       "size_kb": 11.3,
       "notes": "Linear in the features; every coefficient can be read directly."
     },
@@ -349,8 +349,8 @@
       "val_recall_at_0_5": 0.4259927797833935,
       "val_f1_at_0_5": 0.4837590665405235,
       "val_brier": 0.17183497517825855,
-      "fit_seconds": 1.28,
-      "predict_ms_per_1k_rows": 4.28,
+      "fit_seconds": 1.75,
+      "predict_ms_per_1k_rows": 4.16,
       "size_kb": 332.4,
       "notes": "One readable tree, but unstable and prone to overfitting."
     },
@@ -366,8 +366,8 @@
       "val_recall_at_0_5": 0.0,
       "val_f1_at_0_5": 0.0,
       "val_brier": 0.19946523698382637,
-      "fit_seconds": 0.87,
-      "predict_ms_per_1k_rows": 3.14,
+      "fit_seconds": 0.63,
+      "predict_ms_per_1k_rows": 5.83,
       "size_kb": 9.9,
       "notes": "Predicts the base rate for everyone. The floor every model must beat."
     }
@@ -380,7 +380,7 @@
         "cv_roc_auc_std": 0.006731657512987532,
         "cv_pr_auc_mean": 0.5845978082333946,
         "model_columns": 30,
-        "fit_seconds_per_fold": 0.8585948944091797
+        "fit_seconds_per_fold": 2.0464402039845786
       },
       {
         "encoding": "one-hot",
@@ -388,7 +388,7 @@
         "cv_roc_auc_std": 0.004288514281569883,
         "cv_pr_auc_mean": 0.5910098726527876,
         "model_columns": 89,
-        "fit_seconds_per_fold": 0.9797099431355795
+        "fit_seconds_per_fold": 1.8293018341064453
       },
       {
         "encoding": "target encoding",
@@ -396,7 +396,7 @@
         "cv_roc_auc_std": 0.004032135983986516,
         "cv_pr_auc_mean": 0.5937446924528662,
         "model_columns": 30,
-        "fit_seconds_per_fold": 0.7861080169677734
+        "fit_seconds_per_fold": 1.2443161010742188
       }
     ],
     "imbalance": [
@@ -453,7 +453,7 @@
       "model": "logreg",
       "configs_tried": 8,
       "fits": 24,
-      "seconds": 18.9,
+      "seconds": 14.6,
       "best_score": 0.7729365069265817,
       "best_params": {
         "C": 0.1,
@@ -475,7 +475,7 @@
       "model": "rf",
       "configs_tried": 20,
       "fits": 60,
-      "seconds": 124.6,
+      "seconds": 345.5,
       "best_score": 0.7818503150391543,
       "best_params": {
         "max_depth": 20,
@@ -511,7 +511,7 @@
       "model": "lgbm",
       "configs_tried": 24,
       "fits": 72,
-      "seconds": 96.2,
+      "seconds": 188.1,
       "best_score": 0.7835090362006915,
       "best_params": {
         "learning_rate": 0.03,
@@ -550,7 +550,7 @@
       "model": "lgbm",
       "configs_tried": 24,
       "fits": 72,
-      "seconds": 128.6,
+      "seconds": 203.8,
       "best_score": 0.7856355772448941,
       "best_params": {
         "colsample_bytree": 0.5993578407670862,
@@ -594,7 +594,7 @@
       "model": "lgbm",
       "configs_tried": 24,
       "fits": 72,
-      "seconds": 112.1,
+      "seconds": 169.5,
       "best_score": 0.786561885482115,
       "best_params": {
         "num_leaves": 53,
@@ -638,7 +638,7 @@
       "model": "lgbm",
       "configs_tried": 24,
       "fits": 72,
-      "seconds": 331.0,
+      "seconds": 408.8,
       "best_score": 0.8043245694621417,
       "best_params": {
         "num_leaves": 136,
@@ -5407,18 +5407,18 @@
     "parity_ok": true
   },
   "monitoring": {
-    "service_url": "http://127.0.0.1:8765",
-    "local": true,
+    "service_url": "https://hotel-cancellation-risk.vercel.app",
+    "local": false,
     "latency": {
-      "url": "http://127.0.0.1:8765/api/v1/predict",
+      "url": "https://hotel-cancellation-risk.vercel.app/api/v1/predict",
       "requests": 200,
       "errors": 0,
       "error_rate": 0.0,
-      "first_request_ms": 4.227099998388439,
-      "warm_p50_ms": 17.919400008395314,
-      "warm_p95_ms": 34.90149002172984,
-      "warm_p99_ms": 37.17768801609054,
-      "server_p50_ms": 3.73,
+      "first_request_ms": 534.3999000033364,
+      "warm_p50_ms": 500.93290000222623,
+      "warm_p95_ms": 1067.2906099352986,
+      "warm_p99_ms": 1528.282991917805,
+      "server_p50_ms": 1.7149999999999999,
       "max_abs_diff_vs_offline": 6.778221130487871e-07
     },
     "drift_large": [
