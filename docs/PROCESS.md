@@ -2,9 +2,14 @@
 
 **Process documentation: Machine Learning Assignment 1 (The ML Process), classification problem**
 
-**Date:** 19 November 2026
+**Author:** Abel Mari Shiferaw  
+**Student ID:** GSR/1670/19  
+**Course:** Machine Learning  
+**Instructor:** Dr Fantahun Bogale Gereme  
+**Institution:** Addis Ababa University, College of Technology and Built Environment  
+**Date:** 22 November 2026
 
-Demo and API: _not deployed yet_
+Demo and API: [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app)
 
 Code submission: `notebooks/01_hotel_cancellation_classification.ipynb`
 
@@ -28,7 +33,7 @@ real bookings from two Portuguese hotels (Antonio, de Almeida and Nunes, 2019; C
 | At the cost-based threshold (0.63) | precision 0.812, recall 0.193, F1 0.311, accuracy 0.766 |
 | At the best-F1 threshold (0.29) | precision 0.507, recall 0.746, F1 0.604, accuracy 0.731 |
 | Forecast of weekly cancellations per hotel | error 15% with the model, 25% without |
-| Deployment | FastAPI service for Vercel, ONNX model of 6,511 KB; not yet deployed to the cloud; median response 22 ms (measured locally) |
+| Deployment | FastAPI service for Vercel, ONNX model of 6,511 KB; deployed; median response 520 ms, first request 582 ms |
 | Success criterion | **not met**; beats both baselines: yes |
 
 **The three findings that matter.**
@@ -762,7 +767,7 @@ tie the service to exact library versions.
 model, calibration) matches the scikit-learn pipeline to within 1.3e-07 (limit 0.0001). A test repeats
 the check through the API's own request schema.
 
-**Service.** A FastAPI application (`service/`). It is built for Vercel's free tier and deploys with two commands (see the README). **It had not been deployed to the cloud when this document was generated**, so the measurements in Section 10 come from a copy of the same service running locally: they show that the service works and agrees with the model, but not the network delay or the cold start of a cloud deployment.
+**Service.** A FastAPI application (`service/`). It is deployed on Vercel's free tier: [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app).
 
 | Endpoint | Purpose |
 |---|---|
@@ -780,7 +785,7 @@ Requests are validated: values outside plausible ranges, unknown fields and malf
 with a readable message rather than scored. Categories the model has never seen (a new travel agent, for
 example) are scored as "unknown" and reported back in the response.
 
-![The demo page, served by a copy of the service running locally](images/demo_page.png)
+![The demo page of the deployed service](images/demo_page.png)
 
 **Integration with an existing system.** A hotel's booking system calls `POST /api/v1/predict` when a
 booking is created, stores the returned probability and `prediction_id` next to the reservation, and
@@ -795,7 +800,7 @@ and more to maintain).
 
 ## 10. Monitoring and maintenance
 
-**Latency and errors.** 300 real validation bookings were replayed one at a time against a local copy of the service: the first request took 46 ms, then the median was 22 ms, the 95th percentile 35 ms and the 99th 37 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 3.9 ms; the rest is network and platform overhead.
+**Latency and errors.** 300 real validation bookings were replayed one at a time against the deployed service (`https://hotel-cancellation-risk.vercel.app/api/v1/predict`): the first request took 582 ms (it includes starting a serverless instance, the "cold start"), then the median was 520 ms, the 95th percentile 978 ms and the 99th 1,171 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 1.8 ms; the rest is network and platform overhead.
 
 ![Latency of the replayed requests](../reports/figures/monitor_latency.png)
 
@@ -839,7 +844,7 @@ good on the newest validation period.
 |---|---|
 | Working code (the notebook, executed with full budgets) | `notebooks/01_hotel_cancellation_classification.ipynb` |
 | Process documentation (this document) | `docs/PROCESS.md`, with Word and PDF copies |
-| Deployed endpoint | _not deployed yet_ |
+| Deployed endpoint | [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app) |
 | Presentation | `presentation/` |
 | Supporting documents | `README.md`, `docs/MODEL_CARD.md`, `docs/ARCHITECTURE.md` |
 

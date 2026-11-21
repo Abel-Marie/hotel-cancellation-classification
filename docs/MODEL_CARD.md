@@ -2,7 +2,7 @@
 
 - **Version:** `lgbm-99276044514e`
 - **Estimator:** LightGBM, tuned by Bayesian search on all training rows (ONNX export)
-- **Endpoint:** _not deployed yet_
+- **Endpoint:** [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app)
 
 ## Intended use
 

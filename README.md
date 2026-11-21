@@ -7,13 +7,13 @@ threshold, a final test, ONNX export, a FastAPI service on Vercel, and monitorin
 
 Machine Learning Assignment 1, classification problem.
 
-**Demo and API:** _not deployed yet_ (interactive API documentation at `/docs`)
+**Demo and API:** [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app) (interactive API documentation at `/docs`)
 
 | Deliverable | Where |
 |---|---|
 | Code: the executed notebook | [notebooks/01_hotel_cancellation_classification.ipynb](notebooks/01_hotel_cancellation_classification.ipynb) |
 | Process documentation | [docs/PROCESS.md](docs/PROCESS.md) (Word and PDF copies in `docs/`) |
-| Deployed endpoint | _not deployed yet_ |
+| Deployed endpoint | [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app) |
 | Model card, architecture | [docs/MODEL_CARD.md](docs/MODEL_CARD.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 ## Results
@@ -113,8 +113,8 @@ Then put the URL in `configs/config.yaml` (`service.url`) and measure it:
 
 ```bash
 hotel-cancellation monitor drift
-hotel-cancellation monitor latency --url https://<your-app>.vercel.app
-python scripts/check_live.py https://<your-app>.vercel.app
+hotel-cancellation monitor latency --url https://hotel-cancellation-risk.vercel.app
+python scripts/check_live.py https://hotel-cancellation-risk.vercel.app
 ```
 
 | Endpoint | Purpose |
@@ -130,7 +130,7 @@ python scripts/check_live.py https://<your-app>.vercel.app
 | `GET /api/v1/metrics` | Request counts and latency for the serving instance |
 
 ```bash
-curl -X POST https://<your-app>.vercel.app/api/v1/predict -H "Content-Type: application/json" -d '{
+curl -X POST https://hotel-cancellation-risk.vercel.app/api/v1/predict -H "Content-Type: application/json" -d '{
   "hotel": "City Hotel", "lead_time": 120, "arrival_date": "2026-08-14",
   "stays_in_weekend_nights": 1, "stays_in_week_nights": 3, "adults": 2, "children": 0, "babies": 0,
   "meal": "BB", "market_segment": "Online TA", "distribution_channel": "TA/TO", "is_repeated_guest": false,
@@ -141,7 +141,7 @@ curl -X POST https://<your-app>.vercel.app/api/v1/predict -H "Content-Type: appl
 Locally: `python scripts/sync_service.py`, then `cd service && uvicorn main:app --port 8000` and open
 http://127.0.0.1:8000.
 
-**Monitoring.** 300 real validation bookings were replayed one at a time against a local copy of the service: the first request took 46 ms, then the median was 22 ms, the 95th percentile 35 ms and the 99th 37 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 3.9 ms; the rest is network and platform overhead.
+**Monitoring.** 300 real validation bookings were replayed one at a time against the deployed service (`https://hotel-cancellation-risk.vercel.app/api/v1/predict`): the first request took 582 ms (it includes starting a serverless instance, the "cold start"), then the median was 520 ms, the 95th percentile 978 ms and the 99th 1,171 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 1.8 ms; the rest is network and platform overhead.
 
 ## Repository map
 
