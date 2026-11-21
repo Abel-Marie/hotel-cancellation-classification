@@ -128,7 +128,7 @@ success:
 service:
   # Base URL of the deployed API. The notebooks call it for the live checks (Sections 8.3 and 10);
   # the SERVICE_URL environment variable overrides it. Empty means not deployed.
-  url: ""
+  url: "https://hotel-cancellation-risk.vercel.app"
 
 selection:
   # Models within this validation ROC-AUC of the best are treated as tied (the difference is below

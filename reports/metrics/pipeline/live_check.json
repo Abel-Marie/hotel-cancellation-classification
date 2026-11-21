@@ -1,6 +1,6 @@
 {
-  "url": "http://127.0.0.1:8765",
-  "checked_utc": "2026-11-18T00:32:51Z",
+  "url": "https://hotel-cancellation-risk.vercel.app",
+  "checked_utc": "2026-11-21T20:37:17Z",
   "model_version": "lgbm-99276044514e",
   "feedback_storage": "this instance only",
   "parity_rows": 100,
@@ -19,7 +19,7 @@
     {
       "check": "health",
       "ok": true,
-      "detail": "GET /health -> 200 {'status': 'ok', 'model_version': 'lgbm-99276044514e', 'model_self_check': 'ok', 'feedback_storage': 'this instance only', 'uptime_s': 1642.3}"
+      "detail": "GET /health -> 200 {'status': 'ok', 'model_version': 'lgbm-99276044514e', 'model_self_check': 'ok', 'feedback_storage': 'this instance only', 'uptime_s': 265.6}"
     },
     {
       "check": "serves the exported model",
@@ -49,7 +49,7 @@
     {
       "check": "feedback summary",
       "ok": true,
-      "detail": "61 record(s), storage: this instance only"
+      "detail": "1 record(s), storage: this instance only"
     },
     {
       "check": "bad input: malformed JSON",
@@ -119,5 +119,5 @@
   ],
   "passed": 22,
   "failed": 0,
-  "configured_url": ""
+  "configured_url": "https://hotel-cancellation-risk.vercel.app"
 }
