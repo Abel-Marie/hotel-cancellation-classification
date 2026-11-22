@@ -182,7 +182,7 @@ def segment_report(raw: pd.DataFrame, y, proba, threshold: float, by: str) -> pd
         auc = roc_auc_score(part["y"], part["p"]) if part["y"].nunique() == 2 else float("nan")
         rows.append({"by": by, "segment": str(seg), "rows": int(len(part)),
                      "actual_cancel_rate": float(part["y"].mean()),
-                     "predicted_cancel_rate": float((part["p"] >= threshold).mean()),
+                     "flagged_share": float((part["p"] >= threshold).mean()),
                      "error_rate": float(((part["p"] >= threshold).astype(int) != part["y"]).mean()),
                      "roc_auc": float(auc)})
     return pd.DataFrame(rows).sort_values("rows", ascending=False)

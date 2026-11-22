@@ -46,6 +46,22 @@ BOOKING_TIME_COLUMNS = [
 ]
 
 
+def residual_overlap(clean: pd.DataFrame, splits: dict) -> dict:
+    """Held-out rows whose booking-time inputs also occur in the training set.
+
+    Exact duplicates are removed on every column, so two rows that differ only in a column the
+    model never sees are both kept and can land on different sides of the split.
+    """
+    train = clean.iloc[splits["train"]][BOOKING_TIME_COLUMNS].drop_duplicates().assign(in_training=True)
+    result = {"columns_compared": len(BOOKING_TIME_COLUMNS)}
+    for part in ("validation", "test"):
+        held_out = clean.iloc[splits[part]][BOOKING_TIME_COLUMNS]
+        shared = int(held_out.merge(train, on=BOOKING_TIME_COLUMNS, how="left")["in_training"].notna().sum())
+        result[part] = {"rows": int(len(held_out)), "rows_sharing_inputs_with_training": shared,
+                        "share": shared / len(held_out)}
+    return result
+
+
 def duplicate_decomposition(raw: pd.DataFrame, clean: pd.DataFrame, splits: dict, cfg: Config,
                             repeats: int = 3) -> dict:
     """Why does keeping the duplicates raise the score? Memorisation, or a different population?

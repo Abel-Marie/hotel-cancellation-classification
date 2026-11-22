@@ -90,6 +90,7 @@ def plot_rate_by_category(trval: pd.DataFrame, columns: list[str], target: str):
     base = trval[target].mean()
     for ax, col in zip(np.ravel(axes), columns):
         stats = trval.groupby(col)[target].agg(["mean", "size"]).sort_values("size", ascending=False).head(8)
+        stats = stats[stats["size"] >= 100]  # a rate from a handful of rows says nothing
         bars = ax.bar(stats.index.astype(str), stats["mean"], color=PALETTE["blue"])
         ax.bar_label(bars, labels=[f"{v:.0%}" for v in stats["mean"]], fontsize=9, padding=2)
         ax.axhline(base, color=PALETTE["red"], ls="--", lw=1)
@@ -102,7 +103,8 @@ def plot_rate_by_category(trval: pd.DataFrame, columns: list[str], target: str):
     for ax in np.atleast_2d(axes)[:, 0]:
         ax.set_ylabel("Cancellation rate")
     np.ravel(axes)[0].set_ylim(0, 1.12)
-    fig.suptitle("Cancellation rate by category (largest groups; dashed line = overall rate)", fontweight="bold")
+    fig.suptitle("Cancellation rate by category (groups of at least 100 bookings; dashed line = overall rate)",
+                 fontweight="bold")
     fig.tight_layout()
     return fig
 
@@ -130,6 +132,8 @@ def plot_monthly_rate(trval: pd.DataFrame, target: str):
     ax2.plot(series.index, series["mean"], color=PALETTE["red"], marker="o", ms=3, label="Cancellation rate")
     ax2.set_ylabel("Cancellation rate")
     ax2.grid(False)
+    handles = [*ax.get_legend_handles_labels()[0], *ax2.get_legend_handles_labels()[0]]
+    ax.legend(handles, ["Bookings (left axis)", "Cancellation rate (right axis)"], loc="upper left", fontsize=8)
     ax.set_title("Seasonality and drift: bookings and cancellation rate by arrival month")
     return fig
 
@@ -250,14 +254,26 @@ def plot_validation_curve(vc: dict):
 
 
 def plot_roc_pr(curves: dict, title: str):
+    """ROC and precision-recall curves, in the colours of the test bar chart (champion red, logreg blue).
+
+    A model that gives every booking the same score (the majority-class baseline) has no curve: it is
+    the no-skill diagonal in the ROC panel and the base-rate line in the precision-recall panel.
+    """
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
-    colors = [PALETTE["red"], PALETTE["blue"], PALETTE["grey"], PALETTE["teal"]]
-    for (name, (y, p)), color in zip(curves.items(), colors):
+    colors = {"champion": PALETTE["red"], "logreg": PALETTE["blue"]}
+    base_rate = None
+    for name, (y, p) in curves.items():
+        base_rate = float(np.mean(y))
+        if np.unique(p).size == 1:
+            continue
+        color = colors.get(name, PALETTE["teal"])
         fpr, tpr, _ = roc_curve(y, p)
         prec, rec, _ = precision_recall_curve(y, p)
         axes[0].plot(fpr, tpr, color=color, label=name)
         axes[1].plot(rec, prec, color=color, label=name)
-    axes[0].plot([0, 1], [0, 1], ls=":", color=PALETTE["grey"])
+    axes[0].plot([0, 1], [0, 1], ls="--", color=PALETTE["grey"], label="no skill (majority class)")
+    axes[1].axhline(base_rate, ls="--", color=PALETTE["grey"], label=f"no skill: base rate {base_rate:.1%}")
+    axes[1].set_ylim(0, 1.02)
     axes[0].set(xlabel="False positive rate", ylabel="True positive rate", title="ROC curve")
     axes[1].set(xlabel="Recall", ylabel="Precision", title="Precision-recall curve")
     for ax in axes:
@@ -269,7 +285,11 @@ def plot_roc_pr(curves: dict, title: str):
 
 def plot_calibration(y, raw_p, cal_p):
     fig, ax = plt.subplots(figsize=(5, 4.5))
-    for p, color, name in [(raw_p, PALETTE["grey"], "Uncalibrated"), (cal_p, PALETTE["red"], "Calibrated")]:
+    if np.allclose(raw_p, cal_p):  # calibration was tested and not adopted: there is only one set of probabilities
+        lines = [(raw_p, PALETTE["red"], "Model probabilities (no calibration step)")]
+    else:
+        lines = [(raw_p, PALETTE["grey"], "Uncalibrated"), (cal_p, PALETTE["red"], "Calibrated")]
+    for p, color, name in lines:
         frac, mean = calibration_curve(y, p, n_bins=10, strategy="quantile")
         ax.plot(mean, frac, marker="o", color=color, label=name)
     ax.plot([0, 1], [0, 1], ls=":", color=PALETTE["ink"])
@@ -326,6 +346,9 @@ def plot_segments(report: pd.DataFrame):
     fig, axes = plt.subplots(1, len(groups), figsize=(4.2 * len(groups), 4.2), sharey=True)
     for ax, by in zip(np.atleast_1d(axes), groups):
         part = report[report["by"] == by]
+        if by == "lead_time_band":
+            order = ["0-7", "8-30", "31-90", "91-180", "181-365", "365+"]
+            part = part.set_index("segment").reindex([b for b in order if b in set(part["segment"])]).reset_index()
         x = np.arange(len(part))
         ax.bar(x - 0.2, part["actual_cancel_rate"], 0.4, color=PALETTE["grey"], label="Actual cancellation rate")
         ax.bar(x + 0.2, part["error_rate"], 0.4, color=PALETTE["red"], label="Error rate at the threshold")
@@ -364,7 +387,7 @@ def plot_test_results(test: dict):
     ax.errorbar(x + j * width, [test["models"]["champion"]["metrics"][m] for m in metrics],
                 yerr=[lows, highs], fmt="none", color=PALETTE["ink"], capsize=3)
     ax.set_xticks(x + width * (len(names) - 1) / 2, [m.replace("_", "-") for m in metrics])
-    ax.set(ylim=(0, 1.12), title="Test set: the single final evaluation (champion with 95% bootstrap CI)")
+    ax.set(ylim=(0, 1.12), title="Test set, final evaluation (champion with 95% bootstrap CI)")
     ax.legend(ncol=len(names), loc="upper center", frameon=False, bbox_to_anchor=(0.5, 1.0))
     return fig
 

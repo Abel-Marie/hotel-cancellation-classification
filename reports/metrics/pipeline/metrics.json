@@ -247,7 +247,7 @@
       },
       "country": {
         "decision": "exclude",
-        "reason": "Nationality is usually confirmed at check-in. Cancelled bookings keep the value entered at booking, which tends to default to the hotels' home country, so Portugal shows an implausibly high cancellation rate."
+        "reason": "The data does not show when nationality is recorded; it may be entered or corrected at check-in. On its own the column adds more than any other, so the rule \"when in doubt, exclude\" applies."
       }
     }
   },

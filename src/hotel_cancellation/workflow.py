@@ -121,10 +121,12 @@ def run_diagnostics(model, champion: dict, frames: dict, cfg: Config) -> dict:
 
 
 def final_test_pass(test_models: dict, champion_calibration: dict, frames: dict, cfg: Config) -> dict:
-    """The only function that reads the test set. Scores the pre-declared models once.
+    """The only function that reads the test set. Scores the pre-declared models in one pass.
 
     Each model's threshold is chosen on validation before any test row is
-    scored; only the champion is calibrated. Nothing is refitted here.
+    scored; the champion's calibration is applied only if it was adopted on
+    validation. Nothing is refitted here. (The project ran this pass twice;
+    Section 8.1 of the notebook says why.)
     """
     if list(test_models) != list(cfg.test_pass_models):
         raise ValueError(f"test pass must score exactly {cfg.test_pass_models}, got {list(test_models)}")

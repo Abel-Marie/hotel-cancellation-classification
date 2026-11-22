@@ -729,11 +729,9 @@ results of the first evaluation are in `reports/metrics/history/`.
 
 ![Test results, second scoring of the test set](../reports/figures/test_results.png)
 
-The title printed inside this chart calls it "the single final evaluation". It shows the second scoring of the test set, as set out above.
-
 ![ROC and precision-recall curves on the test set](../reports/figures/test_roc_pr.png)
 
-In these two panels the champion is the grey line and the majority-class baseline the red one, the reverse of the bar chart above. The baseline gives every booking the same score, so it has no real precision-recall curve: the straight line drawn for it only joins its two end points. Its precision is the base rate (27.5%) at every recall, and that level is the one to compare the champion's curve with.
+The majority-class baseline gives every booking the same score, so it has no curve of its own: it is the dashed no-skill line in both panels (the diagonal for ROC, the base rate of 27.5% for precision-recall).
 
 The champion at the three operating points (thresholds from validation), with accuracy, precision, recall
 and F1:

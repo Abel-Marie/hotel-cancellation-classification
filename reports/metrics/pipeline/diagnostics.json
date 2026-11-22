@@ -2677,7 +2677,7 @@
       "segment": "City Hotel",
       "rows": 8022,
       "actual_cancel_rate": 0.29468960359012714,
-      "predicted_cancel_rate": 0.06357516828721017,
+      "flagged_share": 0.06357516828721017,
       "error_rate": 0.2493143854400399,
       "roc_auc": 0.7973745976976434
     },
@@ -2686,7 +2686,7 @@
       "segment": "Resort Hotel",
       "rows": 5063,
       "actual_cancel_rate": 0.24432154848903812,
-      "predicted_cancel_rate": 0.06458621370728818,
+      "flagged_share": 0.06458621370728818,
       "error_rate": 0.20501678846533675,
       "roc_auc": 0.8267099634420662
     },
@@ -2695,7 +2695,7 @@
       "segment": "Online TA",
       "rows": 7731,
       "actual_cancel_rate": 0.35221834174104255,
-      "predicted_cancel_rate": 0.07851506920191437,
+      "flagged_share": 0.07851506920191437,
       "error_rate": 0.3083689044108136,
       "roc_auc": 0.7664664557273915
     },
@@ -2704,7 +2704,7 @@
       "segment": "Offline TA/TO",
       "rows": 2055,
       "actual_cancel_rate": 0.14890510948905109,
-      "predicted_cancel_rate": 0.03309002433090024,
+      "flagged_share": 0.03309002433090024,
       "error_rate": 0.11581508515815085,
       "roc_auc": 0.7929190162819464
     },
@@ -2713,7 +2713,7 @@
       "segment": "Direct",
       "rows": 1744,
       "actual_cancel_rate": 0.1404816513761468,
-      "predicted_cancel_rate": 0.013188073394495414,
+      "flagged_share": 0.013188073394495414,
       "error_rate": 0.12958715596330275,
       "roc_auc": 0.7397012974636152
     },
@@ -2722,7 +2722,7 @@
       "segment": "Groups",
       "rows": 787,
       "actual_cancel_rate": 0.30241423125794153,
-      "predicted_cancel_rate": 0.16010165184243966,
+      "flagged_share": 0.16010165184243966,
       "error_rate": 0.144853875476493,
       "roc_auc": 0.8751320200211231
     },
@@ -2731,7 +2731,7 @@
       "segment": "Corporate",
       "rows": 630,
       "actual_cancel_rate": 0.10317460317460317,
-      "predicted_cancel_rate": 0.01904761904761905,
+      "flagged_share": 0.01904761904761905,
       "error_rate": 0.08412698412698413,
       "roc_auc": 0.7594417971409121
     },
@@ -2740,7 +2740,7 @@
       "segment": "Complementary",
       "rows": 102,
       "actual_cancel_rate": 0.14705882352941177,
-      "predicted_cancel_rate": 0.00980392156862745,
+      "flagged_share": 0.00980392156862745,
       "error_rate": 0.13725490196078433,
       "roc_auc": 0.6743295019157087
     },
@@ -2749,7 +2749,7 @@
       "segment": "Aviation",
       "rows": 36,
       "actual_cancel_rate": 0.25,
-      "predicted_cancel_rate": 0.0,
+      "flagged_share": 0.0,
       "error_rate": 0.25,
       "roc_auc": 0.6666666666666666
     },
@@ -2758,7 +2758,7 @@
       "segment": "31-90",
       "rows": 3428,
       "actual_cancel_rate": 0.31884480746791133,
-      "predicted_cancel_rate": 0.040840140023337225,
+      "flagged_share": 0.040840140023337225,
       "error_rate": 0.29492415402567096,
       "roc_auc": 0.7534587436891569
     },
@@ -2767,7 +2767,7 @@
       "segment": "0-7",
       "rows": 2727,
       "actual_cancel_rate": 0.08507517418408507,
-      "predicted_cancel_rate": 0.0062339567290062336,
+      "flagged_share": 0.0062339567290062336,
       "error_rate": 0.07884121745507884,
       "roc_auc": 0.7168258931656416
     },
@@ -2776,7 +2776,7 @@
       "segment": "91-180",
       "rows": 2715,
       "actual_cancel_rate": 0.36353591160220994,
-      "predicted_cancel_rate": 0.07366482504604052,
+      "flagged_share": 0.07366482504604052,
       "error_rate": 0.30902394106813996,
       "roc_auc": 0.7708670470749371
     },
@@ -2785,7 +2785,7 @@
       "segment": "8-30",
       "rows": 2438,
       "actual_cancel_rate": 0.2387202625102543,
-      "predicted_cancel_rate": 0.03240360951599672,
+      "flagged_share": 0.03240360951599672,
       "error_rate": 0.21534044298605415,
       "roc_auc": 0.7596269922384168
     },
@@ -2794,7 +2794,7 @@
       "segment": "181-365",
       "rows": 1691,
       "actual_cancel_rate": 0.3908929627439385,
-      "predicted_cancel_rate": 0.21466587817859256,
+      "flagged_share": 0.21466587817859256,
       "error_rate": 0.26020106445890007,
       "roc_auc": 0.837852327306376
     },
@@ -2803,7 +2803,7 @@
       "segment": "365+",
       "rows": 86,
       "actual_cancel_rate": 0.5348837209302325,
-      "predicted_cancel_rate": 0.4418604651162791,
+      "flagged_share": 0.4418604651162791,
       "error_rate": 0.09302325581395349,
       "roc_auc": 0.9519021739130434
     }

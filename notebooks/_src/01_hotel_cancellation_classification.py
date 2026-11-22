@@ -406,8 +406,9 @@ trval = clean.iloc[np.sort(np.concatenate([splits["train"], splits["validation"]
 # - **Linear models and the neural network:** one-hot encoding with the same grouping of rare categories,
 #   and standardised numeric features (mean 0, standard deviation 1), which these models need.
 #
-# Section 5 compares ordinal, one-hot and target encoding directly, and tests whether a further group of
-# engineered features (`candidate_features` below) is worth adding.
+# Section 5 starts by showing both preprocessors at work on the training rows (a few numeric columns before
+# and after scaling, and the encoded columns), then compares ordinal, one-hot and target encoding directly,
+# and tests whether a further group of engineered features (`candidate_features` below) is worth adding.
 
 # %%
 # @inline hotel_cancellation.rowlevel: *
@@ -592,6 +593,22 @@ modelling, so that is the number it is judged on.
 """)
 
 # %% [markdown]
+# **What deduplication leaves behind.** Exact duplicates were removed on every column of the file. Two
+# bookings that differ only in a column the model never sees (the assigned room, for example) are both
+# kept, and can land on different sides of the split with identical model inputs:
+
+# %%
+overlap = residual_overlap(clean, splits)
+say(f"**{overlap['test']['rows_sharing_inputs_with_training']:,} of the {overlap['test']['rows']:,} test rows "
+    f"({overlap['test']['share']:.1%})** and {overlap['validation']['rows_sharing_inputs_with_training']:,} of the "
+    f"{overlap['validation']['rows']:,} validation rows ({overlap['validation']['share']:.1%}) share all "
+    f"{overlap['columns_compared']} booking-time inputs with at least one training row. The grouped experiment "
+    f"above keeps such rows on one side and scores {duplicates['roc_auc_grouped_one_per_record']:.3f}, against "
+    f"{ladder['Deployed (base + kept Tier 3)']:.3f} without that precaution, so the effect on ROC-AUC is of the "
+    f"order of {ladder['Deployed (base + kept Tier 3)'] - duplicates['roc_auc_grouped_one_per_record']:.3f}. It is "
+    "listed with the limitations in Section 11.")
+
+# %% [markdown]
 # ## 4. Algorithm selection
 #
 # This is **supervised** learning (every booking has a known outcome) and **binary classification**, on
@@ -650,6 +667,37 @@ modelling, so that is the number it is judged on.
 
 # %%
 frames = build_model_frames(clean, splits, cfg)
+
+# %% [markdown]
+# **Encoding and scaling, shown on training rows.** The two preprocessors of Section 3.4 are fitted here on
+# the training rows only, to show what they do. Inside the models they are fitted again within every
+# cross-validation fold.
+
+# %%
+shown = [c for c in ["log_lead_time", "adr", "total_nights", "total_guests"] if c in frames["nums"]]
+linear_prep = make_model("logreg", frames["cats"], frames["nums"], cfg)[:-1].fit(frames["X_train"], frames["y_train"])
+tree_prep = make_model("lgbm", frames["cats"], frames["nums"], cfg)[:-1].fit(frames["X_train"], frames["y_train"])
+linear_names = [str(n) for n in linear_prep.get_feature_names_out()]
+linear_out = linear_prep.transform(frames["X_train"])
+linear_out = np.asarray(linear_out.todense()) if hasattr(linear_out, "todense") else np.asarray(linear_out)
+scaled = pd.DataFrame(linear_out, columns=linear_names)
+picked = {c: next(n for n in linear_names if n == c or n.endswith("__" + c)) for c in shown}
+before_after = pd.DataFrame({
+    "mean before": frames["X_train"][shown].astype(float).mean(), "std before": frames["X_train"][shown].astype(float).std(),
+    "mean after scaling": [scaled[picked[c]].mean() for c in shown],
+    "std after scaling": [scaled[picked[c]].std() for c in shown]})
+display(before_after.round(3))
+tree_out = np.asarray(tree_prep.transform(frames["X_train"]))
+one_hot = [n for n in linear_names if "deposit_type" in n or "hotel" in n]
+say(f"**Scaling** (linear models and the neural network): after standardisation each numeric column has mean 0 "
+    f"and standard deviation 1 on the training rows, as the table shows for {len(shown)} of the "
+    f"{len(frames['nums'])} numeric features. **Encoding:** the {len(frames['cats'])} categorical features become "
+    f"{linear_out.shape[1] - len(frames['nums'])} one-hot columns for the linear models (the encoded training "
+    f"matrix has {linear_out.shape[0]:,} rows and {linear_out.shape[1]} columns; for example "
+    f"{', '.join(f'`{n}`' for n in one_hot[:5])}), and {len(frames['cats'])} integer-coded columns for the tree "
+    f"models (matrix of {tree_out.shape[0]:,} rows and {tree_out.shape[1]} columns, numeric features unscaled).")
+
+# %%
 candidates = evaluate_candidates(frames["X_train"], frames["y_train"], frames["X_validation"],
                                  frames["y_validation"], frames["cats"], frames["nums"], cfg)
 display(candidates.drop(columns="notes").round(4))
@@ -658,7 +706,8 @@ best = candidates.iloc[0]
 by_model = candidates.set_index("model")
 say(f"Before tuning, **{best['model']}** leads on validation ROC-AUC ({best['val_roc_auc']:.3f}). The baseline "
     f"scores {by_model.loc['dummy', 'val_roc_auc']:.3f} by construction. The boosting models and the random "
-    f"forest are close, so tuning (Section 6) decides between them. Accuracy alone is misleading here: "
+    f"forest are close; Section 6 tunes LightGBM and the random forest and chooses between them. Accuracy alone "
+    f"is misleading here: "
     f"predicting \"never cancelled\" already gives {by_model.loc['dummy', 'val_accuracy_at_0_5']:.3f}, and the "
     f"best model reaches {best['val_accuracy_at_0_5']:.3f}, which is why ROC-AUC is the main criterion. "
     f"The most flexible models are within {candidates['val_roc_auc'].iloc[0] - candidates['val_roc_auc'].iloc[3]:.3f} "
@@ -764,8 +813,10 @@ display(pd.DataFrame(champion["comparison"]).drop(columns="params").round(4))
 tied = champion["tied_models"]
 untuned_val = by_model.loc[champion["name"], "val_roc_auc"] if champion["name"] in by_model.index else float("nan")
 say(f"**Champion: {champion['name']}** (search: {champion['strategy']}), validation ROC-AUC "
-    f"**{champion['val_roc_auc']:.4f}** against a best of {champion['best_val_roc_auc']:.4f} among the tuned "
-    f"models, and {untuned_val:.4f} for the same model family with untuned settings (Section 5). Settings: "
+    f"**{champion['val_roc_auc']:.4f}**, "
+    + ("the highest of the tuned models, " if champion["val_roc_auc"] >= champion["best_val_roc_auc"] else
+       f"against a best of {champion['best_val_roc_auc']:.4f} among the tuned models, ")
+    + f"and {untuned_val:.4f} for the same model family with untuned settings (Section 5). Settings: "
     f"`{champion['params']}`."
     + (f" The tree models {', '.join(tied)} are within {cfg.selection.tie_tolerance} of each other on validation, "
        "a difference below run-to-run noise, so the smallest is chosen: it deploys and scores faster. The rule "
@@ -987,13 +1038,9 @@ finish_figure(plot_confusion(test["models"]["champion"]["confusion"], "Test conf
 finish_figure(plot_test_results(test), "test_results", ctx)
 
 # %% [markdown]
-# **Reading the three figures above.** The bar chart's printed title calls this "the single final
-# evaluation"; it is the second scoring of the test set, as explained before the table. In the ROC and
-# precision-recall panels the champion is the grey line and the majority-class baseline the red one, the
-# reverse of the bar chart. The baseline gives every booking the same score, so it has no real
-# precision-recall curve: the straight line drawn for it only joins its two end points. Its precision is
-# the share of bookings that cancel at every recall, and that level is the one to compare the champion's
-# curve with.
+# **Reading the curves above.** The majority-class baseline gives every booking the same score, so it has
+# no curve of its own: it is the dashed no-skill line in both panels (the diagonal for ROC, the share of
+# bookings that cancel for precision-recall).
 #
 # **The champion at the three operating points, and for the hotel's two uses** (thresholds from
 # validation; the same analyses as Sections 6.3 and 6.4):
@@ -1039,6 +1086,12 @@ PR-AUC {c['metrics']['pr_auc']:.3f}, Brier score {c['metrics']['brier']:.4f}.
 **Verdict against the criteria set in Section 1:**
 - Beats both baselines: **{'yes' if s['beats_baselines'] else 'no'}**.
 - Test ROC-AUC of at least {cfg.success.roc_auc}: **{'met' if s['roc_auc_target_met'] else 'not met'}**.
+- Calibrated probabilities: **{'met' if abs(t_cap['bias']) <= 0.05 and c['metrics']['brier'] < test['models']['dummy']['metrics']['brier'] else 'not met'}**,
+  {'with' if diag['calibration']['used'] else 'without'} a separate calibration step. The test Brier score is
+  {c['metrics']['brier']:.4f}, against {test['models']['dummy']['metrics']['brier']:.4f} for a model that gives every
+  booking the base rate; summed over all test bookings the model predicts {t_cap['total_predicted']:,.0f}
+  cancellations against {t_cap['total_actual']:,.0f} actual ({t_cap['bias']:+.1%}). Isotonic calibration
+  {'improved the out-of-fold Brier score on validation and is applied' if diag['calibration']['used'] else 'did not improve the out-of-fold Brier score on validation'} (Section 6.3).
 """ + ("" if s["roc_auc_target_met"] else f"""
 The target was set before modelling and is not moved after seeing the result. This notebook has shown
 why it was missed, with three pieces of evidence:
@@ -1150,8 +1203,7 @@ example_booking = {
 }
 LIVE = api_reachable()
 LOCAL = "127.0.0.1" in SERVICE_URL or "localhost" in SERVICE_URL
-WHERE = ("a copy of the service running on this machine (the cloud deployment had not been made when this "
-         "notebook was executed)" if LOCAL else f"the deployed service at {SERVICE_URL}")
+WHERE = "a copy of the service running on this machine" if LOCAL else f"the deployed service at {SERVICE_URL}"
 if LIVE:
     health = call_api("/health")
     reply = call_api("/api/v1/predict", example_booking)
@@ -1213,6 +1265,15 @@ if LIVE:
            if LOCAL else "")
         + (f"The server itself spends a median of {latency['server_p50_ms']:.1f} ms per request; the rest is "
            "network and platform overhead. " if latency["server_p50_ms"] is not None else "")
+        + ("The first request had to start a new instance (a cold start), which is why it is so much slower. "
+           if latency["first_request_ms"] > 3 * latency["warm_p50_ms"] and not LOCAL else
+           "" if LOCAL else
+           "The instance was already running, so the first request is not a cold start; a cold start takes a few "
+           "seconds on this platform. ")
+        + f"Against the alert rule of Section 10.5 (95th percentile above 1 s), this replay is "
+          f"**{'above' if latency['warm_p95_ms'] > 1000 else 'under'} the line**"
+        + (", so the alert would have fired; nearly all of the time is network and platform overhead, not the model. "
+           if latency["warm_p95_ms"] > 1000 else ". ")
         + f"Largest difference between the service's prediction and the offline model: "
           f"**{latency['max_abs_diff_vs_offline']:.1e}**"
         + (" (the service rounds to six decimals), so the served model is the model evaluated in this notebook."
@@ -1361,7 +1422,7 @@ say(f"""
 | Weekly cancellations per hotel, forecast error | {t_cap['wape_model']:.0%} with the model, {t_cap['wape_base_rate']:.0%} without |
 | What was avoided: ROC-AUC with post-booking columns / with duplicates and a random split | {ladder['+ Tier 2 (known after booking)']:.3f} / {dedup['val_roc_auc_duplicates_kept']:.3f} |
 | Success criterion (test ROC-AUC of at least {cfg.success.roc_auc}) | {'met' if s['roc_auc_target_met'] else 'not met (see 8.1)'} |
-| API | {('measured against a local copy; not yet deployed to the cloud' if LOCAL else SERVICE_URL) if LIVE else 'see the README'} |
+| API | {(SERVICE_URL + (' (a local copy of the service)' if LOCAL else '')) if LIVE else 'see the README'} |
 
 **Limitations.**
 - Two hotels in one country, 2015 to 2017: patterns may not transfer to other hotels or to later years
@@ -1375,6 +1436,9 @@ say(f"""
   that choice does.
 - The cost figures are assumptions; a hotel would replace them with its own, and the threshold follows.
 - The test set was scored twice (Section 8.1).
+- Deduplication on all columns leaves {overlap['test']['share']:.1%} of test rows sharing every booking-time
+  input with a training row (Section 3.7); the effect on ROC-AUC is of the order of
+  {ladder['Deployed (base + kept Tier 3)'] - duplicates['roc_auc_grouped_one_per_record']:.3f}.
 - The "Non Refund" label behaves like a recording practice rather than guest behaviour; the model
   learns it as recorded.
 

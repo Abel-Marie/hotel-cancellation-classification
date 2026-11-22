@@ -70,9 +70,9 @@ leakage:
     country:
       decision: exclude
       reason: >-
-        Nationality is usually confirmed at check-in. Cancelled bookings keep the
-        value entered at booking, which tends to default to the hotels' home
-        country, so Portugal shows an implausibly high cancellation rate.
+        The data does not show when nationality is recorded; it may be entered or
+        corrected at check-in. On its own the column adds more than any other, so
+        the rule "when in doubt, exclude" applies.
 
 costs:
   # Cost of each wrong decision, in room-nights. Relocating an overbooked guest
@@ -127,7 +127,7 @@ success:
 
 service:
   # Base URL of the deployed API. The notebooks call it for the live checks (Sections 8.3 and 10);
-  # the SERVICE_URL environment variable overrides it. Empty means not deployed.
+  # the SERVICE_URL environment variable overrides it. Left empty, those checks are skipped.
   url: "https://hotel-cancellation-risk.vercel.app"
 
 selection:

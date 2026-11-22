@@ -12,30 +12,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pandas as pd
-
 from hotel_cancellation.artifacts import RunContext, save_json
 from hotel_cancellation.pipeline import load_clean_and_splits
-from hotel_cancellation.robustness import BOOKING_TIME_COLUMNS
+from hotel_cancellation.robustness import residual_overlap
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def shared_with_training(clean: pd.DataFrame, splits: dict, part: str) -> dict:
-    """Rows of one held-out part that have the same booking-time inputs as at least one training row."""
-    train = clean.iloc[splits["train"]][BOOKING_TIME_COLUMNS].drop_duplicates()
-    held_out = clean.iloc[splits[part]][BOOKING_TIME_COLUMNS]
-    merged = held_out.merge(train.assign(in_training=True), on=BOOKING_TIME_COLUMNS, how="left")
-    shared = int(merged["in_training"].notna().sum())
-    return {"rows": int(len(held_out)), "rows_sharing_inputs_with_training": shared, "share": shared / len(held_out)}
 
 
 def main() -> None:
     ctx = RunContext(ROOT).ensure()
     clean, splits = load_clean_and_splits(ctx)
-    result = {"columns_compared": len(BOOKING_TIME_COLUMNS),
-              "validation": shared_with_training(clean, splits, "validation"),
-              "test": shared_with_training(clean, splits, "test")}
+    result = residual_overlap(clean, splits)
     save_json(result, ctx.metrics_dir / "overlap.json")
     for part in ("validation", "test"):
         r = result[part]
