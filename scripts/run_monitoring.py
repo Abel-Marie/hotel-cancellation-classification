@@ -1,6 +1,6 @@
 """Thin entry point: drift report, then latency against --url if given.
 
-    python scripts/run_monitoring.py --url https://<your-app>.vercel.app
+    python scripts/run_monitoring.py --url https://hotel-cancellation-risk.vercel.app
 """
 
 import sys

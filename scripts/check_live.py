@@ -1,6 +1,6 @@
 """Check a deployed copy of the API from the outside, as a user would.
 
-    python scripts/check_live.py https://<your-app>.vercel.app
+    python scripts/check_live.py https://hotel-cancellation-risk.vercel.app
 
 Checks the demo page, the documentation, health, the model card, a prediction, a batch,
 agreement with the exported model on real validation bookings, the feedback loop and a few
