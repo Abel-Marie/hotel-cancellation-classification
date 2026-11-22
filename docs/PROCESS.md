@@ -11,7 +11,8 @@
 
 Demo and API: [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app)
 
-Code submission: `notebooks/01_hotel_cancellation_classification.ipynb`
+Code submission: `1_Code_Notebook.ipynb` in the submission folder (in the repository:
+`notebooks/01_hotel_cancellation_classification.ipynb`)
 
 ---
 
@@ -33,14 +34,15 @@ real bookings from two Portuguese hotels (Antonio, de Almeida and Nunes, 2019; C
 | At the cost-based threshold (0.63) | precision 0.812, recall 0.193, F1 0.311, accuracy 0.766 |
 | At the best-F1 threshold (0.29) | precision 0.507, recall 0.746, F1 0.604, accuracy 0.731 |
 | Forecast of weekly cancellations per hotel | error 15% with the model, 25% without |
-| Deployment | FastAPI service for Vercel, ONNX model of 6,511 KB; deployed; median response 520 ms, first request 582 ms |
+| Deployment | FastAPI service for Vercel, ONNX model of 6,511 KB; deployed; median response 520 ms over 300 replayed requests |
 | Success criterion | **not met**; beats both baselines: yes |
 
 **The three findings that matter.**
 
-1. **Most of the performance commonly reported on this dataset is leakage.** The file is a snapshot taken
-   after the outcome was known. With the columns that are only recorded after booking, validation ROC-AUC
-   is 0.920; with only what is known on the day of booking it is 0.805. One column
+1. **In this work, scores above 0.85 are reached only with columns recorded after booking.** The file
+   is a snapshot taken after the outcome was known. With the columns that are only recorded after booking,
+   validation ROC-AUC is 0.920; with only what is known on the day of booking it is
+   0.805. One column
    (parking spaces) has a cancellation rate of exactly zero whenever it is non-zero, because it is filled
    in at check-in.
 2. **Duplicates inflate the score for two different reasons, and only one of them is memorisation.**
@@ -67,9 +69,17 @@ deliverable and how to reproduce the results.
 ## How to read this document
 
 Sections follow the assignment's numbering (which skips 7 and 9). Each section says **what was done**,
-**why**, **what the alternatives were** and **what the result was**. Every number is generated from the
-results files of the final run, so this document cannot disagree with the notebook; no number was typed
-by hand. Three kinds of data are kept strictly apart throughout:
+**why**, **what the alternatives were** and **what the result was**.
+
+**Where the numbers come from.** The results in this document (data counts, model metrics, run times,
+latency) are filled in by a script from the results files of the pipeline run; they are not typed. The
+notebook runs the same code on the same split, and an automated test checks that both runs used the same
+test rows and reached the same test metrics, so data counts and model metrics are the same in the two.
+Two kinds of number were measured separately in each run and therefore differ between this document and
+the notebook's saved output: run times in seconds (Sections 5 and 6.1) and the latency of the live
+service (Section 10). This is said again next to those numbers.
+
+Three kinds of data are kept apart throughout:
 
 - **Training rows** fit models and feed cross-validation.
 - **Validation rows** choose between models and set the calibration and thresholds.
@@ -181,13 +191,23 @@ whole-download time limit makes a slow connection fall through to the next sourc
 The assignment lists exploration, cleaning, feature engineering and splitting. All four are done, in an
 order chosen for one reason: **anything that looks at the target uses training and validation rows only.**
 Structural checks and cleaning (which never look at the outcome) come first on all rows, then the split,
-then feature engineering, and only then the analysis of how features relate to cancellation. The test set
-therefore plays no part in any decision.
+then feature engineering, and only then the analysis of how features relate to cancellation. The test
+rows play no part in the exploration, the feature decisions, the choice of model or the thresholds. They
+were scored twice, and one decision (to improve the tuning) was taken after the first score was known;
+Section 8.1 sets that out.
+
+Three descriptive figures are computed on every row, test rows included, because they describe the file
+and not a model: the cancellation rate before deduplication (37.0%), the cancellation rate
+of the removed duplicate rows (63.1%), and the score a pipeline would report if it kept the
+duplicates and split at random (0.889, one bar in the ablation chart of Section 3.6, which
+re-splits all 119,390 rows). No decision depends on any of the three.
 
 ### 3.2 Exploratory data analysis
 
-**Distributions (one variable at a time).** The numeric columns are strongly right-skewed: lead time has a
-median of 69 days and a maximum of 737; price per night a median of 95.
+**Distributions (one variable at a time).** The numeric columns are strongly right-skewed: in the raw
+file lead time has a median of 69 days and a maximum of 737, and price per night a
+median of 95 (the notebook's table in its Section 3.5 gives the same statistics for the
+cleaned training and validation rows).
 After deduplication 27.5% of bookings are cancelled, a moderate class imbalance
 (37.0% before deduplication).
 
@@ -277,7 +297,7 @@ insensitive to how extreme a value is, and for the linear models lead time enter
 numeric feature is standardised. *Alternatives considered:* deleting or capping (winsorising) outliers,
 rejected because they would distort real bookings for no gain with tree models.
 
-The cleaning log, rule by rule:
+The cleaning log, rule by rule. The table of checks above counts rows in the raw file; the log counts what each rule removed or changed after the exact duplicates had been taken out, so its numbers are smaller (180 zero-guest bookings in the raw file, 166 once duplicates are gone).
 
 ![Cleaning rules](../reports/figures/eda_cleaning_rules.png)
 
@@ -349,9 +369,8 @@ by when its value becomes known:
 **Evidence for the uncertain columns.** Bookings with a parking space are never cancelled in this data
 (6,205 bookings, cancellation rate 0.0%). No real behaviour is that clean: parking
 is recorded at check-in, so a non-zero value means the guest arrived. Special requests can be added at any
-time before arrival, and guests who cancel stop adding them. Nationality is confirmed at check-in, and
-cancelled bookings keep a default value, which gives the hotels' home country an implausibly high
-cancellation rate. Price is agreed at booking and its relationship with cancellation is smooth.
+time before arrival, and guests who cancel stop adding them. For nationality the chart shows no value that gives the outcome away: bookings from the hotels' home country are cancelled 36% of the time, about the same as those with country code BRA (36%). What the data cannot establish is when the nationality is recorded, and on its own the column would add more than any other (+0.069), so it is excluded under the rule below. Price is agreed at
+booking and its relationship with cancellation is smooth.
 
 ![Evidence for the timing-uncertain columns](../reports/figures/leakage_tier3_evidence.png)
 
@@ -372,6 +391,10 @@ as each tier is added back:
 
 Validation ROC-AUC is 0.805 with the deployed features, 0.910 with the timing-uncertain
 columns added, 0.920 with the post-booking columns and 1.000 with the outcome columns.
+These four bars use training and validation rows only. The "duplicates kept" bar (0.889) is
+the one exception: it re-splits every row of the raw file to show what a careless pipeline would report,
+so rows that are test rows here take part in it. Nothing was chosen from that bar; Section 3.7 repeats
+the comparison with the test bookings removed.
 
 *Alternative considered:* keeping special requests, which many analyses of this dataset do and which would
 add +0.029. I excluded it because I could not establish when it is recorded; a hotel that knows
@@ -458,6 +481,9 @@ assignment's classification metrics (threshold metrics at the default 0.5):
 | tree | 0.727 | 0.003 | 0.750 | 0.563 | 0.750 | 0.560 | 0.426 | 0.484 | 2.0 | 3.9 | 332 |
 | dummy | 0.500 | 0.000 | 0.500 | 0.275 | 0.725 | 0.000 | 0.000 | 0.000 | 2.0 | 24.0 | 10 |
 
+Fit and scoring times are wall-clock times of the pipeline run on a laptop. The notebook measures them
+again in its own run, so its table shows different times next to the same scores.
+
 ![Candidate models](../reports/figures/models_candidates.png)
 
 The four most flexible models are within 0.012 ROC-AUC of each other on validation. Four
@@ -528,6 +554,9 @@ the winner of each stage-1 search, so it can only match or beat them in cross-va
 | 1 | bayesian | lgbm | 20,000 | 24 | 72 | 0.7866 | 129 |
 | 2 | bayesian, all training rows | lgbm | 61,058 | 24 | 72 | 0.8043 | 466 |
 
+The seconds are wall-clock times of the pipeline run; the notebook's own run reports different times for
+the same searches and the same scores.
+
 ![Search strategies](../reports/figures/tuning_strategies.png)
 
 With the same budget, the best stage-1 scores were 0.7835 (grid), 0.7856 (random) and
@@ -593,9 +622,9 @@ model's own probabilities are already reliable.
 With calibrated probabilities, acting on a booking pays off only when its probability of cancelling
 exceeds false-alarm cost / (false-alarm cost + missed-cancellation cost) = 2/3. Few bookings are that
 certain to cancel, so few are flagged. The cost curve is also nearly flat around its minimum (within 0.005
-per booking for every threshold from 0.57 to 0.74), which says the same thing from the other
-side: at these costs, flagging single bookings saves little (11.8% on validation). I report that plainly rather than choose a threshold that makes
-the metrics look better. Three operating points, all chosen on validation:
+per booking for every threshold from 0.57 to 0.71), which says the same thing from the other
+side: at these costs, flagging single bookings saves little (11.8% on validation). I
+report that plainly rather than choose a threshold that makes the metrics look better. Three operating points, all chosen on validation:
 
 | Operating point | Threshold | Bookings flagged | Accuracy | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|
@@ -643,10 +672,12 @@ the forecast that needs no model (bookings times the overall cancellation rate).
 ![SHAP summary](../reports/figures/explain_shap_summary.png)
 
 The most important features (drop in validation ROC-AUC when shuffled) are `log_lead_time`, `agent_id`, `customer_type`, `market_segment`, `previous_bookings_not_canceled`. SHAP values
-show the direction for the numeric ones: long lead times, a non-refundable deposit and a history of
-cancellations push the predicted risk up; a history of kept bookings pushes it down. For the categorical
-features (agent, customer type, market segment) the plot shows how much they matter, not a direction,
-because their colour is only a code. None of this is surprising to a hotelier, which is reassuring: the
+show the direction for the numeric ones: long lead times and a history of cancellations push the
+predicted risk up; a history of kept bookings pushes it down. For the categorical features (deposit type,
+agent, customer type, market segment) the plot shows how much they matter, not a direction, because
+their colour is only a code; for deposit type the direction is known from Section 3.2, where the
+non-refundable bookings are the ones cancelled almost always. None of this is surprising to a hotelier,
+which is reassuring: the
 model has learned behaviour, not an artefact like the parking column. Among groups of at least 1,000
 validation bookings, the error analysis shows it is weakest on bookings made 0-7 days before arrival (ROC-AUC 0.717, cancellation rate 9%) and the Direct segment (ROC-AUC 0.740).
 
@@ -666,8 +697,8 @@ harder; this is a limitation and the reason for the retraining policy in Section
 ### 8.1 The final evaluation on the test set
 
 **What is scored.** Three models declared in the configuration in advance: the majority-class baseline,
-the tuned logistic regression and the champion. Each uses the threshold chosen on validation; only the
-champion is calibrated. The metrics are the same as in the evaluation step.
+the tuned logistic regression and the champion. Each uses the threshold chosen on validation.
+Isotonic calibration was tested for the champion and not adopted (Section 6.3), so every model is scored on its own probabilities. The metrics are the same as in the evaluation step.
 
 **The test set has been scored twice. This is the second time.**
 
@@ -696,9 +727,13 @@ results of the first evaluation are in `reports/metrics/history/`.
 | Logistic regression (tuned) | 0.774 | 0.592 | 0.254 |
 | **Champion** | **0.807** (95% CI 0.799 to 0.814) | **0.636** | **0.247** |
 
-![Test results](../reports/figures/test_results.png)
+![Test results, second scoring of the test set](../reports/figures/test_results.png)
+
+The title printed inside this chart calls it "the single final evaluation". It shows the second scoring of the test set, as set out above.
 
 ![ROC and precision-recall curves on the test set](../reports/figures/test_roc_pr.png)
+
+In these two panels the champion is the grey line and the majority-class baseline the red one, the reverse of the bar chart above. The baseline gives every booking the same score, so it has no real precision-recall curve: the straight line drawn for it only joins its two end points. Its precision is the base rate (27.5%) at every recall, and that level is the one to compare the champion's curve with.
 
 The champion at the three operating points (thresholds from validation), with accuracy, precision, recall
 and F1:
@@ -736,6 +771,7 @@ For the hotel's two uses:
 
 - Beats both baselines: **yes**.
 - Test ROC-AUC of at least 0.85: **not met**.
+- Calibrated probabilities: **met**, without a separate calibration step. The test Brier score is 0.1487, against 0.1995 for a model that gives every booking the base rate; summed over all test bookings the model predicts 3,559 cancellations against 3,601 actual (-1.2%); and isotonic calibration did not improve the out-of-fold Brier score on validation (0.1483 against 0.1478 without it).
 
 **Why the target was missed.** The target was set before modelling and I have not moved it. The evidence
 for why it is out of reach with these columns:
@@ -800,11 +836,11 @@ and more to maintain).
 
 ## 10. Monitoring and maintenance
 
-**Latency and errors.** 300 real validation bookings were replayed one at a time against the deployed service (`https://hotel-cancellation-risk.vercel.app/api/v1/predict`): the first request took 582 ms (it includes starting a serverless instance, the "cold start"), then the median was 520 ms, the 95th percentile 978 ms and the 99th 1,171 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 1.8 ms; the rest is network and platform overhead.
+**Latency and errors.** 300 real validation bookings were replayed one at a time against the deployed service (`https://hotel-cancellation-risk.vercel.app/api/v1/predict`): the first request took 582 ms, then the median was 520 ms, the 95th percentile 978 ms and the 99th 1,171 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 1.8 ms; the rest is network and platform overhead. The instance was already running when the replay began, so the first request is not a cold start and takes about as long as the rest. A cold start was measured separately: after the service had been left without traffic, one request took 4.0 s (GET /health, timed from the client, 22 November 2026). These figures come from the pipeline's monitoring command. The notebook repeats the replay in its own run with fewer bookings, so the latency figures in its saved output differ from these; both are measurements of the same service.
 
 ![Latency of the replayed requests](../reports/figures/monitor_latency.png)
 
-**Does the running service give the model's answers?** Yes. Over the same 300 bookings, the largest difference between the service's answer and the exported model run offline was 6.8e-07 (the service rounds to six decimals). The service reports model version `lgbm-99276044514e`, the fingerprint of the model file exported by the pipeline (`lgbm-99276044514e`).
+**Does the running service give the model's answers?** Yes. Over the same 300 bookings, the largest difference between the service's answer and the exported model run offline was 6.8e-07 (the service rounds to six decimals). The service reports model version `lgbm-99276044514e`, which is the fingerprint of the model file the pipeline exported.
 
 **Data drift.** Comparing arrivals up to 2016 with 2017 for every deployed feature (population stability index, PSI), 4 of 30 features shift by more than 0.25: `month_sin`, `arrival_week`, `month_cos`, `agent_id`. The largest is `month_sin` (PSI 5.19). Calendar features shift by construction, because the data covers July
 2015 to August 2017 and the two periods contain different months; shifts in how bookings are sold
@@ -830,6 +866,8 @@ demonstrates the loop against the running service with validation bookings whose
 | Schedule | Calendar | Retrain at least every six months on the latest 24 months, so every season is represented |
 | Service health | 95th-percentile latency and error rate from the logs | Alert if the 95th percentile exceeds 1 s or errors exceed 1% |
 
+Applied to the replay above: the 95th percentile was 978 ms, just under the 1 s line, and the error rate was 0.0%. Nearly all of that time is network and platform overhead (the server's own median is 1.8 ms), so the limit says more about the free hosting tier than about the model. The figure moves from one replay to the next, and the notebook's own replay is reported in the notebook.
+
 Retraining means re-running the pipeline on newer data: champion, calibration and threshold are
 re-chosen, the parity check must pass, and the new model replaces the old one only if it is at least as
 good on the newest validation period.
@@ -840,26 +878,29 @@ good on the newest validation period.
 
 #### What was submitted and where it is
 
-| Deliverable | File |
-|---|---|
-| Working code (the notebook, executed with full budgets) | `notebooks/01_hotel_cancellation_classification.ipynb` |
-| Process documentation (this document) | `docs/PROCESS.md`, with Word and PDF copies |
-| Deployed endpoint | [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app) |
-| Presentation | `presentation/` |
-| Supporting documents | `README.md`, `docs/MODEL_CARD.md`, `docs/ARCHITECTURE.md` |
+| Deliverable | In the submission folder | In the repository (`4_Source_Code.zip`) |
+|---|---|---|
+| Working code (the notebook, executed with full budgets) | `1_Code_Notebook.ipynb` | `notebooks/01_hotel_cancellation_classification.ipynb` |
+| Process documentation (this document) | `2_Process_Documentation.pdf` and `.docx` | `docs/PROCESS.pdf`, `docs/PROCESS.docx`; Markdown source `docs/PROCESS.md` |
+| Presentation | `3_Presentation.pptx` | Not in the repository; the slides are built from the same results files by a separate script |
+| Source code and supporting documents | `4_Source_Code.zip` | `README.md`, `docs/MODEL_CARD.md`, `docs/ARCHITECTURE.md`, the package in `src/`, the API in `service/`, the tests |
+| Deployed endpoint | [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app) | `service.url` in `configs/config.yaml` |
 
 #### Reproducibility
 
 - **Same code everywhere.** The project is a tested Python package; the notebook is built from it by a
-  script that copies the package's functions in verbatim, so the notebook is self-contained and runs
-  alone (for example on Colab) while executing exactly the tested code. A test checks that the notebook
+  script that copies the package's functions in verbatim, so the notebook is self-contained while
+  executing exactly the tested code. It was run alone in an empty folder, which is what a Colab or
+  Jupyter upload amounts to; it was not run on Colab itself. A test checks that the notebook
   and the pipeline used the same test rows and reached the same test metrics.
 - **Fixed inputs.** One random seed, exact package versions, and a checksummed data file.
 - **Checks.** 71 automated test functions (more test cases, since several run over many inputs): cleaning rules, features, metrics and the analyses in this
   document; the API with valid and invalid input; that the service's feature code and model files are
   identical to the pipeline's; and that the service reproduces the pipeline's predictions.
 - **One source of numbers.** The pipeline writes its results to `reports/metrics/`; this document, the
-  README, the model card and the slides are generated from those files.
+  README, the model card and the slides are generated from those files. The notebook computes its own
+  copy of every result; model metrics and data counts match the pipeline's, while run times and latency
+  were measured separately in each run.
 
 #### Limitations
 
@@ -872,6 +913,7 @@ good on the newest validation period.
 - Duplicates were removed although many are probably genuine block bookings (Section 3.7).
 - The cost figures are assumptions.
 - The test set was scored twice (Section 8.1).
+- Exact duplicates were removed on all 32 columns, so bookings that differ only in a column the model does not use can still sit on both sides of the split with identical model inputs: 1,156 of the 13,085 test rows (8.8%) and 1,223 validation rows (9.3%) share all 22 booking-time inputs with a training row. The grouped experiment in Section 3.7 (0.800 with such rows kept on one side, against 0.805 without that precaution) suggests an effect on ROC-AUC of about 0.005.
 - The split is random rather than by time, so the headline score is somewhat optimistic for real use.
 - The "Non Refund" label behaves like a recording practice; the model learns it as recorded.
 
@@ -902,14 +944,14 @@ good on the newest validation period.
 | 3 | Remove exact duplicates before splitting | Keep them with a grouped split | Cautious reading without a booking ID | 3.3, 3.7 |
 | 4 | Remove only impossible values | Delete or cap statistical outliers | Rare values are real and matter | 3.3 |
 | 5 | Missing agent and company become features | Imputation | "None" is information | 3.3 |
-| 6 | Split before any target analysis | Explore first, split later | Keeps the test set out of every decision | 3.1 |
-| 7 | Exclude parking, special requests, country, post-booking columns | Keep them | Not known at booking; "when in doubt, exclude" | 3.6 |
+| 6 | Split before any target analysis | Explore first, split later | Keeps the test rows out of the exploration and the modelling choices; the one decision taken after a test score is set out in 8.1 | 3.1, 8.1 |
+| 7 | Exclude parking, special requests, country, post-booking columns | Keep them | Not known at booking, or timing not established; "when in doubt, exclude" | 3.6 |
 | 8 | Keep price | Exclude it | Agreed at booking; smooth relationship | 3.6 |
 | 9 | Ordinal codes for trees | One-hot, target encoding | Within 0.005 ROC-AUC; smaller, simpler to export | 5 |
 | 10 | No resampling | Class weights, SMOTENC | No ranking gain; distorts probabilities | 5 |
 | 11 | Do not add eight more features | Add them | Gain of +0.0017 is within fold noise | 5 |
 | 12 | Two-stage tuning | Tune only on a subsample | Subsample settings lost to the untuned model | 6.1 |
-| 13 | LightGBM over the random forest | Random forest | Tied on validation; far smaller to deploy | 6.1 |
+| 13 | LightGBM over the random forest | Random forest | Higher validation ROC-AUC (0.8098 against 0.8020, more than the tie tolerance of 0.002) and a model file about 10 times smaller | 6.1 |
 | 14 | No calibration step | Isotonic calibration | No improvement in out-of-fold Brier score | 6.3 |
 | 15 | Threshold from costs (0.63) | 0.5, best F1 | Follows from the stated costs; others reported | 6.3 |
 | 16 | Keep the criterion after missing it | Lower the target | A target moved after the result means nothing | 8.1 |

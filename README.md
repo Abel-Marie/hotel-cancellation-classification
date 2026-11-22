@@ -7,6 +7,8 @@ threshold, a final test, ONNX export, a FastAPI service on Vercel, and monitorin
 
 Machine Learning Assignment 1, classification problem.
 
+Author: Abel Mari Shiferaw, student ID GSR/1670/19, Addis Ababa University, College of Technology and Built Environment, course: Machine Learning, instructor: Dr Fantahun Bogale Gereme.
+
 **Demo and API:** [https://hotel-cancellation-risk.vercel.app](https://hotel-cancellation-risk.vercel.app) (interactive API documentation at `/docs`)
 
 | Deliverable | Where |
@@ -141,7 +143,7 @@ curl -X POST https://hotel-cancellation-risk.vercel.app/api/v1/predict -H "Conte
 Locally: `python scripts/sync_service.py`, then `cd service && uvicorn main:app --port 8000` and open
 http://127.0.0.1:8000.
 
-**Monitoring.** 300 real validation bookings were replayed one at a time against the deployed service (`https://hotel-cancellation-risk.vercel.app/api/v1/predict`): the first request took 582 ms (it includes starting a serverless instance, the "cold start"), then the median was 520 ms, the 95th percentile 978 ms and the 99th 1,171 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 1.8 ms; the rest is network and platform overhead.
+**Monitoring.** 300 real validation bookings were replayed one at a time against the deployed service (`https://hotel-cancellation-risk.vercel.app/api/v1/predict`): the first request took 582 ms, then the median was 520 ms, the 95th percentile 978 ms and the 99th 1,171 ms, measured from the client; the error rate was 0.0%. The server's own processing time had a median of 1.8 ms; the rest is network and platform overhead. The instance was already running when the replay began, so the first request is not a cold start and takes about as long as the rest. A cold start was measured separately: after the service had been left without traffic, one request took 4.0 s (GET /health, timed from the client, 22 November 2026). These figures come from the pipeline's monitoring command. The notebook repeats the replay in its own run with fewer bookings, so the latency figures in its saved output differ from these; both are measurements of the same service.
 
 ## Repository map
 
