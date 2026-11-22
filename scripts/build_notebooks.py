@@ -29,6 +29,7 @@ import os
 import shutil
 import sys
 import tomllib
+from datetime import date
 from pathlib import Path
 
 import jupytext
@@ -99,12 +100,15 @@ def pinned_versions() -> dict[str, str]:
 
 
 def author_line() -> str:
-    """One markdown line naming the author, from docs/author.json; empty if nothing is filled in."""
+    """The author lines and the date, from docs/author.json; empty if nothing is filled in."""
     path = ROOT / "docs" / "author.json"
     info = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     labels = [("name", "Author"), ("student_id", "Student ID"), ("course", "Course"), ("instructor", "Instructor"),
               ("institution", "Institution")]
-    return "  \n".join(f"**{label}:** {info[key]}" for key, label in labels if info.get(key))
+    lines = [f"**{label}:** {info[key]}" for key, label in labels if info.get(key)]
+    if lines:
+        lines.append(f"**Date:** {date.today():%d %B %Y}".replace(" 0", " "))
+    return "  \n".join(lines)
 
 
 def build(source: Path, out: Path) -> None:
