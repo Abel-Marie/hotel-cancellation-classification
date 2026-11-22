@@ -1,0 +1,13 @@
+{
+  "columns_compared": 22,
+  "validation": {
+    "rows": 13085,
+    "rows_sharing_inputs_with_training": 1223,
+    "share": 0.0934658005349637
+  },
+  "test": {
+    "rows": 13085,
+    "rows_sharing_inputs_with_training": 1156,
+    "share": 0.08834543370271303
+  }
+}

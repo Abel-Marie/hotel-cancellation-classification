@@ -1,0 +1,9 @@
+{
+  "url": "https://hotel-cancellation-risk.vercel.app/health",
+  "measured_utc": "2026-11-22T09:23:32Z",
+  "measured_on": "22 November 2026",
+  "method": "GET /health, timed from the client",
+  "idle_first_request_ms": 4029,
+  "following_requests_ms": [1570, 906],
+  "note": "Measured once by hand with curl after the service had been left without traffic overnight; each request opened a new connection."
+}
